@@ -35,15 +35,26 @@ function amount(base,i){const seed=W.indexOf(world)+1;const factor=difficulty===
 function task(id,text,s,h,value,hint){return{id,type:"entry",text,s,h,value,hint}}
 function tasksForWorld(){
 const c=world.firm,p=world.product;
+const area={
+ Fussball:'einen kleinen Fanartikelstand des FC Basel',
+ Mode:'eine fiktive On-Verkaufsstelle',
+ Gaming:'eine fiktive Digitec-Verkaufsstelle',
+ Gastronomie:'einen fiktiven tibits-Stand',
+ Autos:'einen fiktiven BMW-Zubehörstand',
+ Fitness:'einen fiktiven Verkaufspunkt von update Fitness',
+ Reisen:'einen fiktiven SWISS-Servicepunkt',
+ Beauty:'einen fiktiven Import-Parfumerie-Stand',
+ Musik:'einen fiktiven Merchandise-Stand des OpenAir St. Gallen'
+}[world.id];
 return [
-task("capital","Du eröffnest "+c+" und zahlst CHF {x} Eigenkapital auf das Bankkonto ein.","Bank","Eigenkapital",amount(2500,0),"Bank und Eigenkapital nehmen zu."),
+task("capital","Du eröffnest "+area+" und zahlst CHF {x} Eigenkapital auf das Bankkonto ein.","Bank","Eigenkapital",amount(2500,0),"Bank und Eigenkapital nehmen zu."),
 task("purchase","Du kaufst "+p+" für CHF {x} auf Rechnung und buchst den Einkauf direkt als Warenaufwand. Die MWST bleibt unberücksichtigt.","Warenaufwand","Verbindlichkeiten LL",amount(520,1),"Eine unbezahlte Lieferung erzeugt eine Verbindlichkeit."),
 task("sale","Du verkaufst "+p+" für CHF {x}. Der Betrag wird auf dein Bankkonto überwiesen. Ohne MWST.","Bank","Warenertrag",amount(790,2),"Der Verkauf steigert den Warenertrag und die Bank."),
-task("rent","Du bezahlst für "+c+" die Monatsmiete von CHF {x} per Bank.","Mietaufwand","Bank",amount(300,3),"Die Miete ist Aufwand, das Bankguthaben sinkt."),
+task("rent","Du bezahlst für diesen Geschäftsbereich die Monatsmiete von CHF {x} per Bank.","Mietaufwand","Bank",amount(300,3),"Die Miete ist Aufwand, das Bankguthaben sinkt."),
 task("payment","Du begleichst eine offene Lieferantenrechnung über CHF {x} mit einer Banküberweisung.","Verbindlichkeiten LL","Bank",amount(270,4),"Die Verbindlichkeiten und die Bank nehmen ab."),
 task("credit","Du verkaufst "+p+" im Wert von CHF {x} auf Rechnung. Ohne MWST.","Forderungen LL","Warenertrag",amount(1030,5),"Du hast eine Forderung gegenüber der Kundschaft."),
-task("furniture","Für "+c+" kaufst du Ladeneinrichtung für CHF {x} und bezahlst per Bank. Ohne MWST.","Mobiliar","Bank",amount(1120,6),"Mobiliar ist ein Aktivkonto, genau wie Bank."),
-task("loan","Du erhältst für "+c+" ein Bankdarlehen von CHF {x}, direkt auf das Bankkonto überwiesen.","Bank","Bankdarlehen",amount(2000,7),"Bank und Bankdarlehen nehmen zu."),
+task("furniture","Du kaufst für diesen Geschäftsbereich eine Einrichtung für CHF {x} und bezahlst per Bank. Ohne MWST.","Mobiliar","Bank",amount(1120,6),"Mobiliar ist ein Aktivkonto, genau wie Bank."),
+task("loan","Für den Geschäftsbereich erhältst du ein Bankdarlehen von CHF {x}, direkt auf das Bankkonto überwiesen.","Bank","Bankdarlehen",amount(2000,7),"Bank und Bankdarlehen nehmen zu."),
 task("interest","Du bezahlst CHF {x} Darlehenszinsen per Bank.","Zinsaufwand","Bank",amount(85,8),"Zinsen sind Aufwand.")
 ]}
 function buildQuestions(){const level=difficulty==="einfach"?0:difficulty==="mittel"?1:2;const entries=tasksForWorld();const use=level===0?entries.slice(0,4):level===1?entries.slice(1,7):entries.slice(3);if(module==="buchungen")return use.map(t=>({...t,text:t.text.replace("{x}",t.value.toLocaleString("de-CH"))}));
