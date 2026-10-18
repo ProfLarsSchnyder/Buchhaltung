@@ -125,7 +125,72 @@ function openingStep(w){
 }
 const dropdown=()=>'<option value="">Konto wählen</option>'+accounts.map(a=>'<option>'+a+'</option>').join('');
 function journalStep(w){makeSection(w,'1. Journal führen','Lies alle Geschäftsfälle und bestimme Sollkonto, Habenkonto und Betrag. Prüfe danach deine Buchungen.');let wrap=document.createElement('div');wrap.className='tablewrap';wrap.innerHTML='<table><thead><tr><th>Nr.</th><th>Geschäftsfall</th><th>Soll</th><th>Haben</th><th>CHF</th></tr></thead><tbody>'+source.transactions.map((t,i)=>'<tr><td>'+(i+1)+'</td><td style="min-width:240px">'+t.description+'</td><td><select id="s'+i+'">'+dropdown()+'</select></td><td><select id="h'+i+'">'+dropdown()+'</select></td><td><input id="a'+i+'" inputmode="decimal" placeholder="Betrag"></td></tr>').join('')+'</tbody></table>';w.append(wrap);journal.forEach((x,i)=>{if(el('s'+i)){el('s'+i).value=x.debit;el('h'+i).value=x.credit;el('a'+i).value=x.amount}});let c=controls();c.append(button('Journal prüfen',()=>{journal=source.transactions.map((t,i)=>({debit:el('s'+i).value,credit:el('h'+i).value,amount:el('a'+i).value}));const wrong=journal.map((j,i)=>j.debit===source.transactions[i].debit&&j.credit===source.transactions[i].credit&&parseAmount(j.amount)===source.transactions[i].amount?null:i+1).filter(Boolean);info(wrong.length?'Noch nicht korrekt bei Geschäftsfällen: '+wrong.join(', ')+'. Prüfe Soll, Haben und Betrag.':'Alle sieben Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!wrong.length);persistDraft()}));let next=button('Zu den T-Konten →',()=>move(3));next.id='continue';c.append(next);w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>')}
-function ledgerStep(w){makeSection(w,'2. Konten führen','Übertrage nun die Anfangsbestände und alle Buchungen in die Konten. Gib für jedes Konto die Summe der Sollseite und der Habenseite ein. Anschliessend prüft BOOKIT deine Konten.');let grid=document.createElement('div');grid.className='grid';accounts.forEach(a=>{const box=document.createElement('div');box.className='taccount';const related=rows().filter(r=>r.account===a);box.innerHTML='<h3>'+a+'</h3><div class="halves"><div><b>Soll</b>'+related.filter(r=>r.side==='debit').map(r=>'<div class="line"><span>'+r.origin+'</span><span>'+CHF(r.amount)+'</span></div>').join('')+'</div><div><b>Haben</b>'+related.filter(r=>r.side==='credit').map(r=>'<div class="line"><span>'+r.origin+'</span><span>'+CHF(r.amount)+'</span></div>').join('')+'</div></div><div class="grid"><div><label>Summe Soll</label><input inputmode="decimal" id="ls'+accounts.indexOf(a)+'" placeholder="CHF"></div><div><label>Summe Haben</label><input inputmode="decimal" id="lh'+accounts.indexOf(a)+'" placeholder="CHF"></div></div>';grid.append(box)});w.append(grid);accounts.forEach((a,i)=>{el('ls'+i).value=ledgerAnswers[a]?.debit??'';el('lh'+i).value=ledgerAnswers[a]?.credit??''});const c=controls();c.append(button('Konten prüfen',()=>{const wrong=[];accounts.forEach((a,i)=>{const x=el('ls'+i).value,y=el('lh'+i).value;ledgerAnswers[a]={debit:x,credit:y};if(!x||!y||parseAmount(x)!==totals[a].debit||parseAmount(y)!==totals[a].credit)wrong.push(a)});info(wrong.length?'Kontrolliere diese Konten: '+wrong.join(', ')+'. Auch leere Seiten mit 0 angeben.':'Alle Konten stimmen. Du kannst jetzt die Erfolgsrechnung erstellen.',!wrong.length);persistDraft()}));const next=button('Zur Erfolgsrechnung →',()=>move(4));next.id='continue';c.append(next);w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>')}
+
+function captureLedgers(){
+ for(const a of openedAccounts){
+  const k=accounts.indexOf(a),previous=Array.isArray(ledgerAnswers[a])?ledgerAnswers[a]:[];
+  ledgerAnswers[a]=previous.map((r,j)=>({
+   side:r.side,
+   origin:el('lo'+k+'_'+j)?.value??r.origin,
+   amount:el('la'+k+'_'+j)?.value??r.amount
+  }));
+  ledgerTotals[a]={debit:el('ltd'+k)?.value??ledgerTotals[a]?.debit??'',credit:el('ltc'+k)?.value??ledgerTotals[a]?.credit??''};
+ }
+}
+function ledgerRowHtml(k,r,j){
+ const optionValues=['AB',...source.transactions.map((_,i)=>String(i+1))];
+ const opts='<option value="">AB / Nr.</option>'+optionValues.map(v=>'<option value="'+v+'" '+(r.origin===v?'selected':'')+'>'+v+'</option>').join('');
+ return '<div class="account-line"><select id="lo'+k+'_'+j+'" aria-label="Belegnummer">'+opts+'</select><input id="la'+k+'_'+j+'" value="'+escapeText(r.amount)+'" inputmode="decimal" placeholder="Betrag CHF" aria-label="Betrag"><button type="button" data-remove-account="'+k+'" data-remove-row="'+j+'" aria-label="Eintrag entfernen" title="Eintrag entfernen">×</button></div>';
+}
+function ledgerStep(w){
+ makeSection(w,'T-Konten selbst führen','Eröffne die benötigten Konten. Trage den Anfangsbestand als «AB» sowie die Buchungsnummern und Beträge auf der richtigen Seite ein. Zum Schluss berechnest du die Soll- und Habensummen.');
+ const bar=document.createElement('div');bar.className='account-toolbar';
+ bar.innerHTML='<strong>Konto eröffnen</strong><select id="new-account"><option value="">Konto auswählen</option>'+accounts.filter(a=>!openedAccounts.includes(a)).map(a=>'<option value="'+a+'">'+a+'</option>').join('')+'</select><button type="button" class="primary" id="add-account">Konto eröffnen</button><span class="mini">'+openedAccounts.length+' von '+accounts.length+' Konten eröffnet</span>';w.append(bar);
+ el('add-account').onclick=()=>{const a=el('new-account').value;if(!a)return;captureLedgers();openedAccounts.push(a);ledgerAnswers[a]=[];ledgerTotals[a]={debit:'',credit:''};persistDraft();render()};
+ if(!openedAccounts.length){const note=document.createElement('p');note.className='muted';note.textContent='Noch keine Konten eröffnet. Wähle oben das erste Konto aus und füge deine Buchungen hinzu.';w.append(note)}
+ const grid=document.createElement('div');grid.className='account-grid';
+ for(const a of openedAccounts){
+  const k=accounts.indexOf(a),entries=Array.isArray(ledgerAnswers[a])?ledgerAnswers[a]:[];
+  const totalsFor=ledgerTotals[a]||{};
+  const box=document.createElement('article');box.className='account-box';
+  const sides=[['debit','Soll'],['credit','Haben']];
+  box.innerHTML='<h3>'+a+'</h3><div class="halves">'+sides.map(([side,title])=>'<div class="account-side"><div class="account-side-title">'+title+'</div>'+entries.map((r,j)=>r.side===side?ledgerRowHtml(k,r,j):'').join('')+'<button type="button" class="account-add" data-add-account="'+k+'" data-add-side="'+side+'">+ Eintrag</button></div>').join('')+'</div><div class="account-totals"><div><label for="ltd'+k+'">Summe Soll</label><input id="ltd'+k+'" inputmode="decimal" placeholder="CHF" value="'+escapeText(totalsFor.debit)+'"></div><div><label for="ltc'+k+'">Summe Haben</label><input id="ltc'+k+'" inputmode="decimal" placeholder="CHF" value="'+escapeText(totalsFor.credit)+'"></div></div><div class="account-bottom"><button class="secondary" data-check-account="'+k+'" type="button">Dieses Konto prüfen</button><button class="secondary" data-close-account="'+k+'" type="button">Konto entfernen</button></div><div class="account-status'+(accountResults[a]?(accountResults[a].ok?' good':' bad'):'')+'" id="account-result-'+k+'">'+(accountResults[a]?accountResults[a].message:'Noch nicht geprüft')+'</div>';
+  grid.append(box);
+ }
+ w.append(grid);
+ grid.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.addAccount!==undefined){
+   const a=accounts[Number(b.dataset.addAccount)];captureLedgers();ledgerAnswers[a].push({side:b.dataset.addSide,origin:'',amount:''});delete accountResults[a];persistDraft();render();return;
+  }
+  if(b.dataset.removeAccount!==undefined){
+   const a=accounts[Number(b.dataset.removeAccount)];captureLedgers();ledgerAnswers[a].splice(Number(b.dataset.removeRow),1);delete accountResults[a];persistDraft();render();return;
+  }
+  if(b.dataset.checkAccount!==undefined){
+   const a=accounts[Number(b.dataset.checkAccount)];captureLedgers();persistDraft();const result=checkLedger(a);accountResults[a]=result;
+   const notice=el('account-result-'+accounts.indexOf(a));notice.textContent=result.message;notice.className='account-status '+(result.ok?'good':'bad');return;
+  }
+  if(b.dataset.closeAccount!==undefined){
+   const a=accounts[Number(b.dataset.closeAccount)];captureLedgers();openedAccounts=openedAccounts.filter(x=>x!==a);delete ledgerAnswers[a];delete ledgerTotals[a];delete accountResults[a];persistDraft();render();
+  }
+ });
+ const c=controls();c.append(button('Alle Konten prüfen',()=>{
+  captureLedgers();persistDraft();
+  const wrong=[];for(const a of accounts){const result=openedAccounts.includes(a)?checkLedger(a):{ok:false,message:'Dieses Konto wurde noch nicht eröffnet.'};accountResults[a]=result;if(!result.ok)wrong.push(a);const notice=el('account-result-'+accounts.indexOf(a));if(notice){notice.textContent=result.message;notice.className='account-status '+(result.ok?'good':'bad')}}
+  info(wrong.length?'Diese Konten brauchen noch eine Korrektur: '+wrong.join(', ')+'.':'Sehr gut! Alle Konten mit AB und Buchungen sind vollständig und korrekt.',!wrong.length);
+ }));c.append(button('Zur Erfolgsrechnung →',()=>move(4),'secondary'));w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>');
+}
+function checkLedger(a){
+ const expected=rows().filter(r=>r.account===a),actual=ledgerAnswers[a]||[],t=ledgerTotals[a]||{},total=totals[a];
+ const code=r=>r.side+'|'+(r.origin==='Anfang'?'AB':r.origin)+'|'+parseAmount(r.amount);
+ const expectedLines=expected.map(code).sort(),actualLines=actual.map(code).sort();
+ const linesOk=expectedLines.length===actualLines.length&&expectedLines.every((v,i)=>v===actualLines[i])&&actual.every(r=>r.origin&&String(r.amount).trim()&&Number.isFinite(parseAmount(r.amount)));
+ const sumsOk=String(t.debit??'').trim()!==''&&String(t.credit??'').trim()!==''&&parseAmount(t.debit)===total.debit&&parseAmount(t.credit)===total.credit;
+ if(linesOk&&sumsOk)return {ok:true,message:'Richtig. Alle Anfangsbestände, Buchungen und Seitensummen stimmen.'};
+ if(!linesOk&&!sumsOk)return {ok:false,message:'Prüfe AB, Buchungsnummern, Seite und Betrag sowie beide Summen.'};
+ if(!linesOk)return {ok:false,message:'Die Buchungen stimmen noch nicht. Prüfe AB, Buchungsnummern, Soll/Haben und Beträge.'};
+ return {ok:false,message:'Die Buchungen stimmen. Kontrolliere nun beide Seitensummen (leere Seite = 0).'};
+}
 function incomeStep(w){
  makeSection(w,'Erfolgsrechnung','Trage Aufwand, Ertrag und Gewinn auf den richtigen Seiten ein. Beim Gewinn steht der Ausgleichsposten auf der Aufwandseite.');
  const values={'Warenaufwand':signed('Warenaufwand'),'Mietaufwand':signed('Mietaufwand'),'Gewinn':profit,'Warenertrag':-signed('Warenertrag')};
