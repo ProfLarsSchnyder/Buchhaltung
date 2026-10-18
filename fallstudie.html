@@ -36,6 +36,12 @@
 @media(max-width:800px){.account-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.fin-entry{align-items:start;flex-direction:column;gap:5px}.fin-entry input,.fin-total input{width:100%}.fin-total{flex-direction:column;align-items:stretch}.fin-side-body{padding:10px}.fin-panes{grid-template-columns:1fr}.fin-side:first-child{border-right:none;border-bottom:3px solid #c1cfde}.account-box{padding:10px}.account-side{padding:6px}}
 
+
+@media(max-width:560px){
+.account-box .halves{grid-template-columns:1fr}
+.account-box .account-side:first-child{border-right:0;border-bottom:2px solid #aebfd2;padding-bottom:15px}
+.account-line{grid-template-columns:minmax(100px,1fr) minmax(90px,1fr) 30px}
+}
 </style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
