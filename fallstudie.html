@@ -57,13 +57,10 @@ function render(){
 }
 function makeSection(w,heading,desc){let h=document.createElement('h2');h.textContent=heading;w.append(h);let p=document.createElement('p');p.className='muted';p.textContent=desc;w.append(p)}
 function intro(w){
- makeSection(w,'Die Geschichte: '+company,'Lies die Ausgangslage. Du kannst jederzeit zwischen allen Bereichen wechseln.');
+ makeSection(w,'Die Geschichte: '+company,'Lies die Ausgangslage und verschaffe dir einen Überblick über das Unternehmen.');
  const box=document.createElement('div');box.className='scenario';
  box.textContent='Du übernimmst die Buchhaltung von '+company+'. Zu Beginn besitzt das Unternehmen CHF 12’000 auf dem Bankkonto und Mobiliar im Wert von CHF 3’000. Die Eigentümer haben CHF 15’000 Eigenkapital eingebracht. Im Laufe des Geschäftsjahrs folgen sieben Geschäftsfälle. Es wird ohne MWST und mit direkter Verbuchung des Warenhandels gearbeitet.';w.append(box);
- const h=document.createElement('p');h.textContent='Was ist das wichtigste Ziel dieser Fallstudie?';w.append(h);
- const select=document.createElement('select');select.id='story-check';select.innerHTML='<option value="">Bitte auswählen</option><option value="journal">Nur einzelne Buchungssätze lösen</option><option value="complete">Eine vollständige Buchhaltung bis zur Schlussbilanz führen</option><option value="sales">Nur den Umsatz bestimmen</option>';select.value=storyAnswer;w.append(select);
- const c=controls();c.append(button('Geschichte prüfen',()=>{storyAnswer=select.value;persistDraft();info(storyAnswer==='complete'?'Richtig. Du führst das Unternehmen von der Eröffnungsbilanz bis zum Jahresabschluss.':'Überlege, welche weiteren Bereiche nach den Buchungssätzen folgen.',storyAnswer==='complete')}));c.append(button('Zur Eröffnungsbilanz →',()=>move(1),'secondary'));w.append(c);
- w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>');
+ const c=controls();c.append(button('Zur Eröffnungsbilanz →',()=>move(1),'secondary'));w.append(c);
 }
 function openingStep(w){
  makeSection(w,'Eröffnungsbilanz','Trage die Anfangsbestände selbst ein. Die Bilanz muss ausgeglichen sein.');
