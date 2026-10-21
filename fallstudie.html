@@ -191,6 +191,27 @@ main{padding-bottom:125px}
 .result-account.result-neutral span,.result-account.result-neutral strong{color:#172640!important}
 .result-account input{font-weight:800}
 @media(max-width:680px){.read-only-side .ledger-static-line{grid-template-columns:49px minmax(0,1fr);gap:3px}}
+
+/* Die Zahlen-Werkzeuge erscheinen wieder nur direkt am gewählten Feld. */
+.amount-toolbar{
+ position:fixed;
+ top:0;bottom:auto;left:0;transform:none;
+ z-index:2000;max-width:calc(100vw - 16px);
+ padding:7px;gap:6px;flex-wrap:wrap;
+ border:1px solid #c9dfd5;border-radius:10px;
+ background:#fff;box-shadow:0 8px 24px #152c4826;
+}
+.amount-toolbar[hidden],.amount-toolbar button[hidden]{display:none!important}
+.amount-toolbar-status{display:none}
+.amount-toolbar button{font-size:12px;padding:9px 11px}
+main{padding-bottom:70px}
+.copy-feedback{bottom:22px;right:18px}
+@media(max-width:520px){
+ .amount-toolbar{bottom:auto;top:0;padding:6px;gap:4px}
+ .amount-toolbar button{font-size:11px;padding:8px}
+ main{padding-bottom:70px}
+ .copy-feedback{bottom:20px;right:10px}
+}
 </style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
@@ -593,7 +614,7 @@ function runLedgerTransfers(){
  el('ledger-notice').textContent='Übernahme ausgeführt: '+(ledgerPreferences.ab?availableAB.length+' Anfangsbestände. ':'')+(ledgerPreferences.journal?availableJournal.length+' Buchungssätze.':'')+' Es werden deine Eingaben übernommen, nicht die Musterlösung.';
 }
 function ledgerStep(w){
- makeSection(w,'T-Konten führen','Eröffne die Konten und trage AB und Buchungen ein. Berechne die Seitensummen und ermittle den EB. Für das Kopieren und Einfügen von Beträgen kannst du die Leiste unten verwenden.');
+ makeSection(w,'T-Konten führen','Eröffne die Konten und trage AB und Buchungen ein. Berechne die Seitensummen und ermittle den EB. Beim Anklicken eines Zahlenfelds erscheinen Kopieren und Einfügen; bei Summenfeldern zusätzlich «Summe berechnen».');
  const settings=document.createElement('details');settings.className='ledger-settings';settings.innerHTML='<summary>Hilfen & Automatik <span class="muted">optional</span></summary><div class="ledger-settings-body">'
  +'<label class="ledger-option"><input type="checkbox" id="auto-ab" '+(ledgerPreferences.ab?'checked':'')+'> AB aus meiner Eröffnungsbilanz übernehmen</label>'
  +'<label class="ledger-option"><input type="checkbox" id="auto-journal" '+(ledgerPreferences.journal?'checked':'')+'> Buchungen aus meinem Journal übernehmen</label>'
@@ -860,13 +881,27 @@ function updateAmountToolbar(){
  label.textContent=!selected?'Zahlenfeld wählen':value.trim()&&Number.isFinite(parseAmount(value))?formattedAmount(value):'Zahlenfeld ausgewählt';
  copy.disabled=!selected||!value.trim()||!Number.isFinite(parseAmount(value));
  paste.disabled=!field||field.readOnly||field.disabled||(!lastCopiedAmount&&!navigator.clipboard?.readText);
- calculate.disabled=!isSumField(field);
+ const isSum=isSumField(field);
+ calculate.disabled=!isSum;
+ calculate.hidden=!isSum;
+ if(!selected){amountToolbar.hidden=true;return}
+ const anchor=field||readOnly;
+ if(!anchor?.getBoundingClientRect){amountToolbar.hidden=true;return}
+ amountToolbar.hidden=false;
+ const rect=anchor.getBoundingClientRect(),width=amountToolbar.offsetWidth||230,height=amountToolbar.offsetHeight||52;
+ const viewportWidth=document.documentElement.clientWidth||window.innerWidth;
+ const viewportHeight=window.innerHeight;
+ // Prefer oberhalb: so werden die nächsten Eingabezeilen und Schaltflächen nicht verdeckt.
+ const top=rect.top-height-8>=8?rect.top-height-8:Math.min(rect.bottom+7,viewportHeight-height-8);
+ amountToolbar.style.left=Math.max(8,Math.min(rect.left,viewportWidth-width-8))+'px';
+ amountToolbar.style.top=Math.max(8,top)+'px';
 }
 function initAmountToolbar(){
  if(amountToolbar)return;
  amountToolbar=document.createElement('div');
  amountToolbar.className='amount-toolbar';
  amountToolbar.id='amount-toolbar';
+ amountToolbar.hidden=true;
  amountToolbar.setAttribute('role','group');
  amountToolbar.setAttribute('aria-label','Beträge kopieren, einfügen oder Summe berechnen');
  amountToolbar.innerHTML='<span class="amount-toolbar-status" aria-live="polite">Zahlenfeld wählen</span><button type="button" data-number-action="copy">⧉ Kopieren</button><button type="button" data-number-action="paste">↧ Einfügen</button><button type="button" data-number-action="calculate" title="Alle eingetragenen Beträge auf dieser Seite addieren">∑ Summe berechnen</button>';
@@ -904,8 +939,10 @@ document.addEventListener('click',event=>{
  if(event.target.closest('#amount-toolbar'))return;
  const readOnly=event.target.closest('[data-copy-value]');
  if(readOnly){selectReadOnlyAmount(readOnly);return}
- if(event.target.matches('input[inputmode="decimal"]'))selectAmountField(event.target);
+ if(event.target.matches('input[inputmode="decimal"]')){selectAmountField(event.target);return}
+ clearSelectedAmount();
 });
+document.addEventListener('scroll',()=>{if(amountToolbar)amountToolbar.hidden=true},true);
 document.addEventListener('focusout',e=>{
  const input=e.target;
  if(!(input instanceof HTMLInputElement)||input.getAttribute('inputmode')!=='decimal'||input.readOnly)return;
