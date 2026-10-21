@@ -241,6 +241,13 @@ const ledgerPreferences={ab:false,journal:false,sums:false};
 const dynamicSheetRows={op:{left:[],right:[]},er:{left:[],right:[]},bs:{left:[],right:[]}};
 const completedSheets={op:false,er:false,bs:false};
 const lockedAccounts={};
+const activityStats={checks:0,failedChecks:0,errorNotices:0,helps:{opening:0,journal:0,autoSums:0,income:0,balance:0,sumButton:0,copy:0,paste:0}};
+function recordCheck(correct,issues=0){
+ activityStats.checks++;
+ if(!correct){activityStats.failedChecks++;activityStats.errorNotices+=Math.max(1,Number(issues)||1)}
+ persistDraft();
+}
+function recordHelp(kind){if(Object.prototype.hasOwnProperty.call(activityStats.helps,kind)){activityStats.helps[kind]++;persistDraft()}}
 const stages=['Geschichte','Eröffnungsbilanz','Buchungssätze','T-Konten','Erfolgsrechnung','Schlussbilanz','Auswertung'];
 function rows(){const entries=[];for(const [acc,n] of Object.entries(source.opening)){entries.push({account:acc,side:categories[acc]==='asset'?'debit':'credit',amount:n,origin:'Anfang'})}source.transactions.forEach((t,i)=>{entries.push({account:t.debit,side:'debit',amount:t.amount,origin:String(i+1)});entries.push({account:t.credit,side:'credit',amount:t.amount,origin:String(i+1)})});return entries}
 function balances(){const totals={};accounts.forEach(a=>totals[a]={debit:0,credit:0});rows().forEach(r=>totals[r.account][r.side]+=r.amount);return totals}
@@ -257,12 +264,13 @@ function remember(){
  persistDraft();
 }
 const draftKey='bookit-draft-v5-'+world;
-function persistDraft(){try{localStorage.setItem(draftKey,JSON.stringify({journal,openedAccounts,ledgerAnswers,ledgerTotals,erAnswers,balanceAnswers,openingAnswers,ledgerPreferences,dynamicSheetRows,completedSheets,lockedAccounts}))}catch(e){}}
+function persistDraft(){try{localStorage.setItem(draftKey,JSON.stringify({journal,openedAccounts,ledgerAnswers,ledgerTotals,erAnswers,balanceAnswers,openingAnswers,ledgerPreferences,dynamicSheetRows,completedSheets,lockedAccounts,activityStats}))}catch(e){}}
 try{const d=JSON.parse(localStorage.getItem(draftKey)||localStorage.getItem('bookit-draft-v4-'+world)||'null');if(d){
  journal=d.journal||[];openedAccounts=d.openedAccounts||[];
  ledgerAnswers=d.ledgerAnswers||{};ledgerTotals=d.ledgerTotals||{};
  erAnswers=d.erAnswers||{};balanceAnswers=d.balanceAnswers||{};openingAnswers=d.openingAnswers||{};Object.assign(ledgerPreferences,d.ledgerPreferences||{});if(d.dynamicSheetRows)for(const key of ['op','er','bs']){if(d.dynamicSheetRows[key])dynamicSheetRows[key]=d.dynamicSheetRows[key]}
  Object.assign(completedSheets,d.completedSheets||{});Object.assign(lockedAccounts,d.lockedAccounts||{});
+ if(d.activityStats){activityStats.checks=Number(d.activityStats.checks)||0;activityStats.failedChecks=Number(d.activityStats.failedChecks)||0;activityStats.errorNotices=Number(d.activityStats.errorNotices)||0;Object.assign(activityStats.helps,d.activityStats.helps||{})}
 }}catch(e){}
 function move(next){remember();step=next;render()}
 function render(preserveScroll=false){
@@ -457,6 +465,7 @@ function renderFinishedSheet(w,prefix,nextText,nextStep){
 function dynamicSheetControls(w,prefix,buttonText,nextLabel,nextStep){
  const actions=controls();actions.append(button(buttonText,()=>{
   readDynamicSheet(prefix);const errors=checkDynamicSheet(prefix);
+  recordCheck(!errors.length,errors.length);
   if(!errors.length){completedSheets[prefix]=true;persistDraft();render();return}
   completedSheets[prefix]=false;persistDraft();info('Bitte überprüfe: '+errors.join(', ')+'.',false);
  }));
@@ -470,7 +479,7 @@ function openingStep(w){
  dynamicSheetControls(w,'op','Eröffnungsbilanz prüfen','Zu den Buchungssätzen →',2);
 }
 const dropdown=()=>'<option value="">Konto wählen</option>'+accounts.map(a=>'<option value="'+escapeText(a)+'">'+escapeText(accountLabel(a))+'</option>').join('');
-function journalStep(w){makeSection(w,'1. Journal führen','Lies alle Geschäftsfälle und bestimme Sollkonto, Habenkonto und Betrag. Klicke ein Betragsfeld an, um die Zahl zu kopieren oder einzufügen.');let wrap=document.createElement('div');wrap.className='tablewrap';wrap.innerHTML='<table><thead><tr><th>Nr.</th><th>Geschäftsfall</th><th>Soll</th><th>Haben</th><th>CHF</th></tr></thead><tbody>'+source.transactions.map((t,i)=>'<tr><td>'+(i+1)+'</td><td style="min-width:240px">'+t.description+'</td><td><select id="s'+i+'">'+dropdown()+'</select></td><td><select id="h'+i+'">'+dropdown()+'</select></td><td><input id="a'+i+'" inputmode="decimal" placeholder="Betrag" title="Anklicken zum Kopieren oder Einfügen"></td></tr>').join('')+'</tbody></table>';w.append(wrap);journal.forEach((x,i)=>{if(el('s'+i)){el('s'+i).value=x.debit;el('h'+i).value=x.credit;el('a'+i).value=x.amount}});let c=controls();c.append(button('Journal prüfen',()=>{journal=source.transactions.map((t,i)=>({debit:el('s'+i).value,credit:el('h'+i).value,amount:el('a'+i).value}));const wrong=journal.map((j,i)=>j.debit===source.transactions[i].debit&&j.credit===source.transactions[i].credit&&parseAmount(j.amount)===source.transactions[i].amount?null:i+1).filter(Boolean);info(wrong.length?'Noch nicht korrekt bei Geschäftsfällen: '+wrong.join(', ')+'. Prüfe Soll, Haben und Betrag.':'Alle sieben Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!wrong.length);persistDraft()}));let next=button('Zu den T-Konten →',()=>move(3));next.id='continue';c.append(next);w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>')}
+function journalStep(w){makeSection(w,'1. Journal führen','Lies alle Geschäftsfälle und bestimme Sollkonto, Habenkonto und Betrag. Klicke ein Betragsfeld an, um die Zahl zu kopieren oder einzufügen.');let wrap=document.createElement('div');wrap.className='tablewrap';wrap.innerHTML='<table><thead><tr><th>Nr.</th><th>Geschäftsfall</th><th>Soll</th><th>Haben</th><th>CHF</th></tr></thead><tbody>'+source.transactions.map((t,i)=>'<tr><td>'+(i+1)+'</td><td style="min-width:240px">'+t.description+'</td><td><select id="s'+i+'">'+dropdown()+'</select></td><td><select id="h'+i+'">'+dropdown()+'</select></td><td><input id="a'+i+'" inputmode="decimal" placeholder="Betrag" title="Anklicken zum Kopieren oder Einfügen"></td></tr>').join('')+'</tbody></table>';w.append(wrap);journal.forEach((x,i)=>{if(el('s'+i)){el('s'+i).value=x.debit;el('h'+i).value=x.credit;el('a'+i).value=x.amount}});let c=controls();c.append(button('Journal prüfen',()=>{journal=source.transactions.map((t,i)=>({debit:el('s'+i).value,credit:el('h'+i).value,amount:el('a'+i).value}));const wrong=journal.map((j,i)=>j.debit===source.transactions[i].debit&&j.credit===source.transactions[i].credit&&parseAmount(j.amount)===source.transactions[i].amount?null:i+1).filter(Boolean);recordCheck(!wrong.length,wrong.length);info(wrong.length?'Noch nicht korrekt bei Geschäftsfällen: '+wrong.join(', ')+'. Prüfe Soll, Haben und Betrag.':'Alle sieben Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!wrong.length);persistDraft()}));let next=button('Zu den T-Konten →',()=>move(3));next.id='continue';c.append(next);w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>')}
 
 
 function openingSide(a){if(!Object.prototype.hasOwnProperty.call(source.opening,a))return null;return categories[a]==='asset'?'debit':'credit'}
@@ -576,7 +585,7 @@ function checkLedger(a){
   const got=ledgerPreferences.sums?computedSideTotal(data[side]):parseAmount(sums[side]??'');
   if(!Number.isFinite(got)||(ledgerPreferences.sums===false&&String(sums[side]??'').trim()==='')||got!==requiredTotal)errors.push('Summe '+(side==='debit'?'Soll':'Haben'));
  }
- return errors.length?{ok:false,message:'Noch prüfen: '+errors.join(', ')+'.'}:{ok:true,message:'Richtig! Die Buchungen, allfällige Anfangsbestände, EB und Summen stimmen.'};
+ return errors.length?{ok:false,errors,message:'Noch prüfen: '+errors.join(', ')+'.'}:{ok:true,errors:[],message:'Richtig! Die Buchungen, allfällige Anfangsbestände, EB und Summen stimmen.'};
 }
 function runLedgerTransfers(){
  captureLedgers();
@@ -610,6 +619,7 @@ function runLedgerTransfers(){
    if(!lockedAccounts[j.credit])ensureLedger(j.credit).credit.entries.push(j.amount);
   }
  }
+ if(ledgerPreferences.ab)recordHelp('opening');if(ledgerPreferences.journal)recordHelp('journal');
  for(const a of Object.keys(accountResults))if(!lockedAccounts[a])delete accountResults[a];persistDraft();render();
  el('ledger-notice').textContent='Übernahme ausgeführt: '+(ledgerPreferences.ab?availableAB.length+' Anfangsbestände. ':'')+(ledgerPreferences.journal?availableJournal.length+' Buchungssätze.':'')+' Es werden deine Eingaben übernommen, nicht die Musterlösung.';
 }
@@ -636,7 +646,7 @@ function ledgerStep(w){
  const note=document.createElement('div');note.id='ledger-notice';note.className='mini ledger-notice';w.append(note);
  el('auto-ab').onchange=e=>{ledgerPreferences.ab=e.target.checked;persistDraft()};
  el('auto-journal').onchange=e=>{ledgerPreferences.journal=e.target.checked;persistDraft()};
- el('auto-sums').onchange=e=>{captureLedgers();ledgerPreferences.sums=e.target.checked;persistDraft();render()};
+ el('auto-sums').onchange=e=>{captureLedgers();ledgerPreferences.sums=e.target.checked;if(e.target.checked)recordHelp('autoSums');persistDraft();render()};
  el('apply-transfers').onclick=runLedgerTransfers;
  el('add-account').onclick=()=>{const a=el('new-account').value;if(!a)return;captureLedgers();openedAccounts.push(a);ensureLedger(a);persistDraft();render()};
  if(!openedAccounts.length){const msg=document.createElement('p');msg.className='muted';msg.textContent='Noch keine Konten eröffnet. Wähle oben ein Konto oder nutze eine Übernahme aus der Eröffnungsbilanz beziehungsweise dem Journal.';w.append(msg)}
@@ -679,6 +689,7 @@ function ledgerStep(w){
   }
   if(b.dataset.check!==undefined){
    captureLedgers();persistDraft();const result=checkLedger(a);accountResults[a]=result;
+   recordCheck(result.ok,result.errors.length);
    if(result.ok){lockedAccounts[a]=true;persistDraft();rerenderAtLedgerAction(k,'unlock');return}
    const display=el('account-result-'+k);display.textContent=result.message;display.className='account-status '+(result.ok?'good':'bad');return;
   }
@@ -688,13 +699,14 @@ function ledgerStep(w){
  });
  const c=controls();c.append(button('Alle Konten prüfen',()=>{
   captureLedgers();persistDraft();
-  const wrong=[];let newlyLocked=false;
+  const wrong=[];let newlyLocked=false;let totalIssues=0;
   for(const a of accounts){
    const result=openedAccounts.includes(a)?checkLedger(a):{ok:false,message:'Noch nicht eröffnet.'};
-   accountResults[a]=result;if(!result.ok)wrong.push(a);
+   accountResults[a]=result;if(!result.ok){wrong.push(a);totalIssues+=result.errors?.length||1}
    if(result.ok&&!lockedAccounts[a]){lockedAccounts[a]=true;newlyLocked=true}
    const display=el('account-result-'+accounts.indexOf(a));if(display){display.textContent=result.message;display.className='account-status '+(result.ok?'good':'bad')}
   }
+  recordCheck(!wrong.length,totalIssues);
   persistDraft();if(newlyLocked)render(true);
   info(wrong.length?'Noch nicht korrekt: '+wrong.join(', ')+'. Die korrekten Konten wurden abgeschlossen.':'Sehr gut! Alle T-Konten sind korrekt und abgeschlossen.',!wrong.length);
  }));c.append(button('Zur Erfolgsrechnung →',()=>move(4),'secondary'));w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>');
@@ -760,6 +772,7 @@ function transferFinancialSheet(prefix){
  mapped.left.sort((a,b)=>accountSort(a.account,b.account));
  mapped.right.sort((a,b)=>accountSort(a.account,b.account));
  dynamicSheetRows[prefix]=mapped;
+ recordHelp(prefix==='er'?'income':'balance');
  // Summen werden nur aus den selbst erfassten, übertragenen Zahlen berechnet,
  // nicht aus den Sollwerten der Fallstudie.
  const state=sheetStoredState(prefix);
@@ -812,6 +825,7 @@ function resetEntireCase(){
  if(!confirm('Wirklich die gesamte Fallstudie «'+company+'» zurücksetzen? Alle Eingaben in Eröffnungsbilanz, Buchungssätzen, T-Konten, Erfolgsrechnung und Schlussbilanz gehen verloren.'))return;
  journal=[];ledgerAnswers={};ledgerTotals={};openedAccounts=[];accountResults={};
  erAnswers={};balanceAnswers={};openingAnswers={};storyAnswer='';for(const key of ['op','er','bs']){dynamicSheetRows[key]={left:[],right:[]};completedSheets[key]=false;}for(const a of Object.keys(lockedAccounts))delete lockedAccounts[a];
+ activityStats.checks=0;activityStats.failedChecks=0;activityStats.errorNotices=0;for(const k of Object.keys(activityStats.helps))activityStats.helps[k]=0;
  Object.assign(ledgerPreferences,{ab:false,journal:false,sums:false});
  try{
   localStorage.removeItem(draftKey);
@@ -861,7 +875,7 @@ function copyUserAmount(value){
  const raw=String(value??'').trim();
  if(!raw||!Number.isFinite(parseAmount(raw))){showCopyFeedback('Bitte zuerst einen gültigen Betrag eingeben.');return}
  lastCopiedAmount=formattedAmount(raw);
- updateAmountToolbar();
+ recordHelp('copy');updateAmountToolbar();
  try{if(navigator.clipboard?.writeText)navigator.clipboard.writeText(lastCopiedAmount).catch(()=>{})}catch(e){}
  showCopyFeedback(lastCopiedAmount+' kopiert.');
 }
@@ -925,7 +939,7 @@ function calculateSelectedSum(){
  if(!count){showCopyFeedback('Trage zuerst mindestens einen Betrag auf dieser Seite ein.');return}
  field.value=formattedAmount(Math.round((total+Number.EPSILON)*100)/100);
  field.dispatchEvent(new Event('input',{bubbles:true}));
- remember();
+ remember();recordHelp('sumButton');
  updateAmountToolbar();
  showCopyFeedback('Summe '+field.value+' aus '+count+' Betrag'+(count===1?'':'en')+' berechnet.');
 }
@@ -982,7 +996,7 @@ function initAmountToolbar(){
   if(!value||!Number.isFinite(parseAmount(value))){showCopyFeedback('Bitte zuerst einen Betrag kopieren.');return}
   field.value=formattedAmount(value);
   field.dispatchEvent(new Event('input',{bubbles:true}));
-  remember();
+  remember();recordHelp('paste');
   updateAmountToolbar();
   showCopyFeedback(field.value+' eingefügt.');
  });
