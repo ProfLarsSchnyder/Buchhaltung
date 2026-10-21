@@ -153,6 +153,44 @@ main{padding-bottom:125px}
 .amount-toolbar [data-number-action="calculate"]:hover:not(:disabled){background:#dceafa}
 .amount-toolbar [data-number-action="calculate"]:disabled{background:#f3f5f6;border-color:#e4ebee;color:#9caab6}
 @media(max-width:650px){.amount-toolbar{gap:4px;padding:7px}.amount-toolbar-status{max-width:74px;font-size:10px}.amount-toolbar button{font-size:10px;padding:8px 7px}}
+
+/* Geprüfte T-Konten: klassische, saubere Konten statt grauer Eingabefelder. */
+.read-only-side .ledger-static-line{
+ display:grid;grid-template-columns:65px minmax(0,1fr);
+ align-items:center;gap:6px;min-height:34px;
+ padding:4px 5px;background:transparent;border-radius:0;
+}
+.read-only-side .ledger-static-line.ledger-static-eb{
+ margin-top:auto;min-height:45px;padding-top:10px;
+ background:transparent;border-radius:0;
+}
+.read-only-side .ledger-static-line.ledger-static-total{
+ border-top:2px solid #aebfd2;margin-top:8px;
+ min-height:51px;padding-top:11px;
+ background:transparent;
+}
+.read-only-side .ledger-static-label{font-size:12px;color:#28405d}
+.read-only-side .ledger-static-number{
+ display:inline-block;justify-self:end;
+ width:auto;height:auto;max-width:100%;min-width:0;min-height:0;
+ border:0;border-radius:3px;background:transparent;
+ padding:3px 2px;color:#243c57;
+ font-size:13px;font-weight:450;font-variant-numeric:tabular-nums;line-height:1.4;text-align:right;
+ cursor:pointer;
+}
+.read-only-side .ledger-static-number:hover{background:transparent;color:#147b63;text-decoration:underline}
+.read-only-side .ledger-static-eb .ledger-static-number{font-weight:900;color:#172d45}
+.read-only-side .ledger-static-total .ledger-static-number{font-weight:650}
+.read-only-side .ledger-static-entries{min-height:40px}
+.read-only-side .ledger-static-blank{display:block;min-height:20px}
+.result-account.result-positive select,.result-account.result-positive input,
+.result-account.result-positive span,.result-account.result-positive strong{color:#12804c!important}
+.result-account.result-negative select,.result-account.result-negative input,
+.result-account.result-negative span,.result-account.result-negative strong{color:#be3434!important}
+.result-account.result-neutral select,.result-account.result-neutral input,
+.result-account.result-neutral span,.result-account.result-neutral strong{color:#172640!important}
+.result-account input{font-weight:800}
+@media(max-width:680px){.read-only-side .ledger-static-line{grid-template-columns:49px minmax(0,1fr);gap:3px}}
 </style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
@@ -285,6 +323,29 @@ function readDynamicSheet(prefix){
   }
  }
 }
+
+function isResultAccount(prefix,account){return (prefix==='er'&&account==='Gewinn')||(prefix==='bs'&&account==='Jahresgewinn')}
+function outcomeClass(value){
+ const raw=String(value??'').trim();
+ if(!raw||!Number.isFinite(parseAmount(raw)))return 'result-neutral';
+ const n=parseAmount(raw);
+ return n>0?'result-positive':n<0?'result-negative':'result-neutral';
+}
+function refreshResultColors(prefix){
+ if(prefix!=='er'&&prefix!=='bs')return;
+ for(const side of ['left','right']){
+  const rows=dynamicSheetRows[prefix][side];
+  rows.forEach((row,i)=>{
+   const select=el('fs-'+prefix+'-'+side+'-a'+i);
+   const input=el('fs-'+prefix+'-'+side+'-v'+i);
+   const wrapper=select?.closest('.sheet-entry');
+   if(!wrapper||!input)return;
+   wrapper.classList.remove('result-positive','result-negative','result-neutral','result-account');
+   if(!isResultAccount(prefix,select.value))return;
+   wrapper.classList.add('result-account',outcomeClass(input.value));
+  });
+ }
+}
 function dynamicPane(prefix,side,label,idx){
  const entries=sheetSideItems(prefix,side),choices=sheetDef[prefix].options();
  return '<section class="fin-side"><div class="fin-side-title">'+label+'</div><div class="fin-side-body">'
@@ -303,6 +364,9 @@ function dynamicSheetHTML(prefix){
 }
 function attachDynamicSheet(w,prefix){
  const sheet=el('dynamic-'+prefix);
+ refreshResultColors(prefix);
+ sheet.addEventListener('input',()=>refreshResultColors(prefix));
+ sheet.addEventListener('change',()=>refreshResultColors(prefix));
  sheet.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.fsAdd!==undefined){
@@ -354,7 +418,7 @@ function finishedSheetHTML(prefix){
    +groups[side].map(([heading,belongs])=>{
     const matches=rows.filter(r=>belongs(r.account));
     return '<div class="finished-group"><div class="finished-group-heading">'+heading+'</div>'
-      +(matches.length?matches.map(r=>'<div class="finished-row"><span>'+escapeText(accountLabel(r.account))+'</span><strong>'+escapeText(formattedAmount(r.amount))+'</strong></div>').join(''):'<div class="finished-empty">–</div>')+'</div>';
+      +(matches.length?matches.map(r=>'<div class="finished-row'+(isResultAccount(prefix,r.account)?' result-account '+outcomeClass(r.amount):'')+'"><span>'+escapeText(accountLabel(r.account))+'</span><strong>'+escapeText(formattedAmount(r.amount))+'</strong></div>').join(''):'<div class="finished-empty">–</div>')+'</div>';
    }).join('')
    +'</div><div class="fin-total"><strong>Total '+label+'</strong><span class="finished-total">'+escapeText(formattedAmount(totalState['total'+idx]))+'</span></div></section>';
  }
@@ -457,16 +521,19 @@ function ledgerSideHtml(k,side,data){
   +'<div class="simple-line total-line"><strong>Summe</strong><input id="ltotal'+k+t+'" inputmode="decimal" placeholder="CHF" value="'+escapeText(value)+'" '+(ledgerPreferences.sums?'readonly title="Wird aus deinen Einträgen berechnet"':'')+' aria-label="'+caption+' Summe"></div></section>';
 }
 function readonlyLedgerSide(k,side,data){
- const a=accounts[k],caption=side==='debit'?'Soll':'Haben';
- const cat=categories[a],sign=(side==='debit'?(cat==='asset'||cat==='expense'):(cat==='liability'||cat==='equity'||cat==='revenue'))?'+':'−';
- const total=ledgerPreferences.sums?computedSideTotal(data):ledgerTotals[a]?.[side]??'';
- const valueMarkup=(value,label)=>'<button type="button" class="finished-value-copy" data-copy-value="'+escapeText(String(value??''))+'" title="'+label+' kopieren">'+escapeText(formattedAmount(value))+'</button>';
- const line=(name,value)=>'<div class="simple-line read-only-line"><span>'+name+'</span>'+valueMarkup(value,name)+'</div>';
+ const account=accounts[k],caption=side==='debit'?'Soll':'Haben',type=categories[account];
+ const sign=(side==='debit'?(type==='asset'||type==='expense'):(type==='liability'||type==='equity'||type==='revenue'))?'+':'−';
+ const total=ledgerPreferences.sums?computedSideTotal(data):ledgerTotals[account]?.[side]??'';
+ const valueHTML=value=>{
+  if(String(value??'').trim()==='')return '<span class="ledger-static-blank"></span>';
+  return '<button type="button" class="ledger-static-number" data-copy-value="'+escapeText(String(value))+'" title="Betrag auswählen">'+escapeText(formattedAmount(value))+'</button>';
+ };
+ const line=(name,value,cls='')=>'<div class="ledger-static-line '+cls+'"><span class="ledger-static-label">'+name+'</span>'+valueHTML(value)+'</div>';
  return '<section class="simple-side read-only-side"><div class="simple-side-title">'+caption+' '+sign+'</div>'
- +(openingSide(a)===side?line('AB',data.ab):'')
- +'<div class="simple-entries">'+data.entries.map(v=>line('Buchung',v)).join('')+'</div>'
- +'<div class="simple-line special eb-line read-only-line"><span>EB</span>'+valueMarkup(data.eb,'Endbestand')+'</div>'
- +'<div class="simple-line total-line read-only-line"><strong>Summe</strong>'+valueMarkup(total,'Summe')+'</div></section>';
+ +(openingSide(account)===side?line('AB',data.ab):'')
+ +'<div class="simple-entries ledger-static-entries">'+data.entries.map(v=>line('Buchung',v)).join('')+'</div>'
+ +line(String(data.eb??'').trim()!==''?'EB':'',data.eb,'ledger-static-eb')
+ +line('Summe',total,'ledger-static-total')+'</section>';
 }
 function checkLedger(a){
  const data=ensureLedger(a),expected=rows().filter(r=>r.account===a),errors=[];
@@ -543,7 +610,7 @@ function ledgerStep(w){
  el('add-account').onclick=()=>{const a=el('new-account').value;if(!a)return;captureLedgers();openedAccounts.push(a);ensureLedger(a);persistDraft();render()};
  if(!openedAccounts.length){const msg=document.createElement('p');msg.className='muted';msg.textContent='Noch keine Konten eröffnet. Wähle oben ein Konto oder nutze eine Übernahme aus der Eröffnungsbilanz beziehungsweise dem Journal.';w.append(msg)}
  const grid=document.createElement('div');grid.className='account-grid';grid.id='editable-accounts';
- for(const a of openedAccounts){
+ for(const a of openedAccounts.slice().sort(accountSort)){
   const k=accounts.indexOf(a),data=ensureLedger(a);
   const box=document.createElement('article');box.className='account-box';
   box.innerHTML='<h3>'+escapeText(accountLabel(a))+(lockedAccounts[a]?' <span class="account-locked">✓ geprüft</span>':'')+'</h3><div class="simple-ledger">'+(lockedAccounts[a]?readonlyLedgerSide(k,'debit',data.debit)+readonlyLedgerSide(k,'credit',data.credit):ledgerSideHtml(k,'debit',data.debit)+ledgerSideHtml(k,'credit',data.credit))+'</div>'
