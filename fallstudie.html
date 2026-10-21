@@ -698,37 +698,88 @@ function ledgerEnd(a){
  if(String(raw??'').trim()===''||!Number.isFinite(parseAmount(raw)))return null;
  return parseAmount(raw);
 }
-function transferFinancialSheet(prefix){
- readDynamicSheet(prefix);
- if(prefix==='op')return;
- const choose=prefix==='er'?accounts.filter(a=>categories[a]==='expense'||categories[a]==='revenue'):accounts.filter(a=>categories[a]==='asset'||categories[a]==='liability'||categories[a]==='equity');
- const found=[];
- for(const a of choose){
-  const amount=ledgerEnd(a);
-  if(amount===null)continue;
+
+function sourceResultFromIncome(){
+ const line=dynamicSheetRows.er.left.concat(dynamicSheetRows.er.right).find(row=>row.account==='Gewinn');
+ if(!line)return '';
+ const raw=String(line.amount??'').trim();
+ return raw&&Number.isFinite(parseAmount(raw))?formattedAmount(raw):'';
+}
+function accountEntriesFromLedgers(prefix){
+ const applicable=accounts.filter(a=>prefix==='er'
+  ?categories[a]==='expense'||categories[a]==='revenue'
+  :['asset','liability','equity'].includes(categories[a]));
+ const found=[],missing=[];
+ for(const a of applicable){
+  if(!openedAccounts.includes(a)){missing.push(a);continue}
+  const amount=ledgerEnd(a);  // Tatsächlich eingetragener EB, nie Musterlösung
+  if(amount===null){missing.push(a);continue}
   if(amount===0)continue;
   const side=categories[a]==='asset'||categories[a]==='expense'?'left':'right';
   found.push({side,account:a,amount:formattedAmount(amount)});
  }
- if(prefix==='bs'){
-  const gained=dynamicSheetRows.er.left.find(r=>r.account==='Gewinn');
-  if(gained&&String(gained.amount??'').trim()!==''&&Number.isFinite(parseAmount(gained.amount))&&parseAmount(gained.amount)!==0){
-   found.push({side:'right',account:'Jahresgewinn',amount:gained.amount});
-  }
+ return {found,missing};
+}
+function transferFinancialSheet(prefix){
+ if(prefix!=='er'&&prefix!=='bs')return;
+ readDynamicSheet(prefix);
+ const {found,missing}=accountEntriesFromLedgers(prefix);
+ const notice=el('transfer-status');
+ if(!found.length){
+  if(notice)notice.textContent='Noch keine Endbestände aus den T-Konten vorhanden. Trage dort zuerst die EB ein.';
+  return;
  }
- if(!found.length){const msg=el('transfer-status');msg.textContent='Noch keine übertragbaren Kontensaldi vorhanden. Erfasse zuerst die EB in den T-Konten'+(prefix==='bs'?' sowie den Gewinn in der Erfolgsrechnung':'')+'.';return}
- const existing=dynamicSheetRows[prefix];
- if([...existing.left,...existing.right].some(r=>r.account||r.amount)){
-  if(!confirm('Die bisherigen Kontozeilen dieser '+(prefix==='er'?'Erfolgsrechnung':'Schlussbilanz')+' werden durch deine bisherigen Eingaben ersetzt. Fortfahren?'))return;
+ const old=dynamicSheetRows[prefix];
+ const oldResult=prefix==='er'
+  ?old.left.concat(old.right).find(r=>r.account==='Gewinn')?.amount??''
+  :old.left.concat(old.right).find(r=>r.account==='Jahresgewinn')?.amount??'';
+ if([...old.left,...old.right].some(r=>r.account||String(r.amount??'').trim())){
+  if(!confirm('Die bisherigen Kontenzeilen werden aus deinen T-Konten neu übernommen. Bereits eingegebener Gewinn oder Verlust bleibt erhalten. Fortfahren?'))return;
  }
- dynamicSheetRows[prefix]={left:found.filter(x=>x.side==='left').map(({account,amount})=>({account,amount})),right:found.filter(x=>x.side==='right').map(({account,amount})=>({account,amount}))};
- persistDraft();render();
- const msg=el('transfer-status');
- if(msg)msg.textContent=found.length+' Konten aus deinen Eingaben übernommen. Ergänze bei Bedarf weitere Konten und berechne die Summen selbst.';
+ // Auch bei automatischer Übernahme bleibt die Ergebniszeile bewusst leer,
+ // solange die Lernenden den Gewinn nicht selbst berechnet haben.
+ const resultRow=prefix==='er'
+  ?{account:'Gewinn',amount:oldResult}
+  :{account:'Jahresgewinn',amount:sourceResultFromIncome()||oldResult};
+ const mapped={
+  left:found.filter(x=>x.side==='left').map(({account,amount})=>({account,amount})),
+  right:found.filter(x=>x.side==='right').map(({account,amount})=>({account,amount}))
+ };
+ if(prefix==='er')mapped.left.push(resultRow);
+ else mapped.right.push(resultRow);
+ mapped.left.sort((a,b)=>accountSort(a.account,b.account));
+ mapped.right.sort((a,b)=>accountSort(a.account,b.account));
+ dynamicSheetRows[prefix]=mapped;
+ // Summen werden nur aus den selbst erfassten, übertragenen Zahlen berechnet,
+ // nicht aus den Sollwerten der Fallstudie.
+ const state=sheetStoredState(prefix);
+ const sumSide=side=>mapped[side].reduce((sum,row)=>{
+  const n=parseAmount(row.amount);
+  return String(row.amount??'').trim()&&Number.isFinite(n)?sum+n:sum;
+ },0);
+ if(prefix==='er'){
+  const revenue=sumSide('right');
+  state.total0=formattedAmount(revenue);
+  state.total1=formattedAmount(revenue);
+ }else{
+  const assetsTotal=sumSide('left');
+  state.total0=formattedAmount(assetsTotal);
+  state.total1=formattedAmount(assetsTotal);
+ }
+ persistDraft();
+ render(true);
+ const status=el('transfer-status');
+ if(status){
+  const missingText=missing.length?' Noch ohne Endbestand: '+missing.map(accountLabel).join(', ')+'.':'';
+  const gainText=prefix==='er'
+   ?' Berechne jetzt den Gewinn und trage ihn in die freie Zeile ein.'
+   :(resultRow.amount?' Der von dir erfasste Gewinn aus der Erfolgsrechnung wurde übernommen.':' Trage nach der Gewinnberechnung noch den Jahresgewinn ein.');
+  status.textContent=found.length+' Konten mit deinen Endbeständen übernommen.'+gainText+missingText;
+ }
 }
 function showTransferButton(w,prefix,detail){
  const box=document.createElement('div');box.className='sheet-transfer';
- box.innerHTML='<span class="mini">'+detail+'</span><button type="button" id="transfer-sheet" class="secondary">Konten übernehmen</button>';
+ box.innerHTML='<div><strong>Automatische Übernahme</strong><p class="mini" style="margin:5px 0 0">'+detail+'</p></div><button type="button" id="transfer-sheet" class="secondary">Aus T-Konten übernehmen</button>';
  w.append(box);
  w.insertAdjacentHTML('beforeend','<div id="transfer-status" class="mini" aria-live="polite" style="margin-top:9px"></div>');
  el('transfer-sheet').onclick=()=>transferFinancialSheet(prefix);
@@ -736,15 +787,15 @@ function showTransferButton(w,prefix,detail){
 function incomeStep(w){
  makeSection(w,'Erfolgsrechnung',completedSheets.er?'Deine korrekt geprüfte Erfolgsrechnung.':'Wähle die Aufwands- und Ertragskonten selbst aus oder übernimm deine Endbestände aus den T-Konten.');
  if(completedSheets.er){renderFinishedSheet(w,'er','Zur Schlussbilanz →',5);return}
+ showTransferButton(w,'er','Übernimmt Konten und selbst erfasste Endbestände. Der Gewinn bleibt zum Selberberechnen frei.');
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('er'));attachDynamicSheet(w,'er');
- showTransferButton(w,'er','Konten und Beträge aus deinen T-Konten übernehmen. Den Gewinn kannst du anschliessend selbst ergänzen.');
  dynamicSheetControls(w,'er','Erfolgsrechnung prüfen','Zur Schlussbilanz →',5);
 }
 function balanceStep(w){
  makeSection(w,'Schlussbilanz',completedSheets.bs?'Deine korrekt geprüfte Schlussbilanz mit Umlauf- und Anlagevermögen sowie Fremd- und Eigenkapital.':'Wähle die Konten selbst aus und ordne sie Aktiven oder Passiven zu. Die Endbestände aus den T-Konten kannst du freiwillig übernehmen.');
  if(completedSheets.bs){renderFinishedSheet(w,'bs','Zur Auswertung →',6);return}
+ showTransferButton(w,'bs','Übernimmt die Bilanzkonten aus deinen T-Konten und einen von dir selbst berechneten Jahresgewinn aus der Erfolgsrechnung.');
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('bs'));attachDynamicSheet(w,'bs');
- showTransferButton(w,'bs','Übernimm Konten und Beträge aus deiner Kontenführung und gegebenenfalls den Jahresgewinn aus deiner Erfolgsrechnung.');
  dynamicSheetControls(w,'bs','Schlussbilanz prüfen','Zur Auswertung →',6);
 }
 function resetEntireCase(){
