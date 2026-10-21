@@ -109,6 +109,18 @@
 .copy-feedback{position:fixed;z-index:1000;bottom:22px;right:22px;max-width:320px;border-radius:10px;background:#203a53;color:white;box-shadow:0 8px 28px #1b354033;padding:12px 17px;font-size:13px;pointer-events:none}
 .copy-feedback[hidden]{display:none}
 @media(max-width:680px){.simple-line{grid-template-columns:49px minmax(0,1fr) 24px 24px;gap:3px}.simple-line.special,.simple-line.total-line{grid-template-columns:49px minmax(0,1fr) 24px 24px}.sheet-entry{grid-template-columns:minmax(85px,1fr) minmax(70px,1fr) 26px 26px !important;gap:4px}}
+
+.finished-sheet .fin-head{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.finished-check{font-size:12px;font-weight:750;color:#b8f3d7}
+.finished-sheet .fin-side-body{padding:20px 18px 24px}
+.finished-group{margin-bottom:19px}
+.finished-group-heading{font-weight:850;font-size:13px;color:#254967;border-bottom:1px solid #e4ebf1;padding-bottom:8px;margin-bottom:6px}
+.finished-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:8px 0;font-size:13px;font-variant-numeric:tabular-nums}
+.finished-row>span{min-width:0}.finished-row strong{white-space:nowrap}
+.finished-empty{color:#96a6b5;font-size:12px;padding:7px 0}
+.finished-total{font-weight:900;color:#165f4a;font-variant-numeric:tabular-nums;font-size:16px}
+.finished-sheet .fin-total{background:#eef7f2}
+@media(max-width:650px){.finished-row{font-size:12px;gap:7px}.finished-sheet .fin-side-body{padding:14px 10px}.finished-total{font-size:14px}}
 </style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
@@ -136,6 +148,8 @@ const el=id=>document.getElementById(id);const CHF=n=>new Intl.NumberFormat('de-
 let step=0,journal=[],ledgerAnswers={},ledgerTotals={},openedAccounts=[],erAnswers={},balanceAnswers={},validations=[],openingAnswers={},storyAnswer='';let accountResults={};
 const ledgerPreferences={ab:false,journal:false,sums:false};
 const dynamicSheetRows={op:{left:[],right:[]},er:{left:[],right:[]},bs:{left:[],right:[]}};
+const completedSheets={op:false,er:false,bs:false};
+const lockedAccounts={};
 const stages=['Geschichte','Eröffnungsbilanz','Buchungssätze','T-Konten','Erfolgsrechnung','Schlussbilanz','Auswertung'];
 function rows(){const entries=[];for(const [acc,n] of Object.entries(source.opening)){entries.push({account:acc,side:categories[acc]==='asset'?'debit':'credit',amount:n,origin:'Anfang'})}source.transactions.forEach((t,i)=>{entries.push({account:t.debit,side:'debit',amount:t.amount,origin:String(i+1)});entries.push({account:t.credit,side:'credit',amount:t.amount,origin:String(i+1)})});return entries}
 function balances(){const totals={};accounts.forEach(a=>totals[a]={debit:0,credit:0});rows().forEach(r=>totals[r.account][r.side]+=r.amount);return totals}
@@ -152,11 +166,12 @@ function remember(){
  persistDraft();
 }
 const draftKey='bookit-draft-v5-'+world;
-function persistDraft(){try{localStorage.setItem(draftKey,JSON.stringify({journal,openedAccounts,ledgerAnswers,ledgerTotals,erAnswers,balanceAnswers,openingAnswers,ledgerPreferences,dynamicSheetRows}))}catch(e){}}
+function persistDraft(){try{localStorage.setItem(draftKey,JSON.stringify({journal,openedAccounts,ledgerAnswers,ledgerTotals,erAnswers,balanceAnswers,openingAnswers,ledgerPreferences,dynamicSheetRows,completedSheets,lockedAccounts}))}catch(e){}}
 try{const d=JSON.parse(localStorage.getItem(draftKey)||localStorage.getItem('bookit-draft-v4-'+world)||'null');if(d){
  journal=d.journal||[];openedAccounts=d.openedAccounts||[];
  ledgerAnswers=d.ledgerAnswers||{};ledgerTotals=d.ledgerTotals||{};
  erAnswers=d.erAnswers||{};balanceAnswers=d.balanceAnswers||{};openingAnswers=d.openingAnswers||{};Object.assign(ledgerPreferences,d.ledgerPreferences||{});if(d.dynamicSheetRows)for(const key of ['op','er','bs']){if(d.dynamicSheetRows[key])dynamicSheetRows[key]=d.dynamicSheetRows[key]}
+ Object.assign(completedSheets,d.completedSheets||{});Object.assign(lockedAccounts,d.lockedAccounts||{});
 }}catch(e){}
 function move(next){remember();step=next;render()}
 function render(){
@@ -291,16 +306,47 @@ function checkDynamicSheet(prefix){
  }
  return [...new Set(errors)];
 }
+
+const FINISHED_GROUPS={
+ op:{left:[['Umlaufvermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])<1400],['Anlagevermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])>=1400]],right:[['Kurzfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])<2400],['Langfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])>=2400],['Eigenkapital',a=>categories[a]==='equity']]},
+ bs:{left:[['Umlaufvermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])<1400],['Anlagevermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])>=1400]],right:[['Kurzfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])<2400],['Langfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])>=2400],['Eigenkapital',a=>categories[a]==='equity'||a==='Jahresgewinn']]},
+ er:{left:[['Aufwandskonten',a=>categories[a]==='expense'],['Jahresergebnis',a=>a==='Gewinn']],right:[['Ertragskonten',a=>categories[a]==='revenue']]}
+};
+function finishedSheetHTML(prefix){
+ const cfg=sheetDef[prefix],groups=FINISHED_GROUPS[prefix],saved=dynamicSheetRows[prefix],totalState=sheetStoredState(prefix);
+ function sideMarkup(side,label,idx){
+  const rows=saved[side].filter(r=>r.account&&String(r.amount??'').trim()).slice().sort((a,b)=>accountSort(a.account,b.account));
+  return '<section class="fin-side finished-side"><div class="fin-side-title">'+label+'</div><div class="fin-side-body">'
+   +groups[side].map(([heading,belongs])=>{
+    const matches=rows.filter(r=>belongs(r.account));
+    return '<div class="finished-group"><div class="finished-group-heading">'+heading+'</div>'
+      +(matches.length?matches.map(r=>'<div class="finished-row"><span>'+escapeText(accountLabel(r.account))+'</span><strong>'+escapeText(formattedAmount(r.amount))+'</strong></div>').join(''):'<div class="finished-empty">–</div>')+'</div>';
+   }).join('')
+   +'</div><div class="fin-total"><strong>Total '+label+'</strong><span class="finished-total">'+escapeText(formattedAmount(totalState['total'+idx]))+'</span></div></section>';
+ }
+ return '<div class="fin-sheet finished-sheet"><div class="fin-head">'+cfg.title+' <span class="finished-check">✓ geprüft</span></div><div class="fin-panes">'+sideMarkup('left',cfg.left,0)+sideMarkup('right',cfg.right,1)+'</div></div>';
+}
+function renderFinishedSheet(w,prefix,nextText,nextStep){
+ w.insertAdjacentHTML('beforeend',finishedSheetHTML(prefix));
+ w.insertAdjacentHTML('beforeend','<div class="message good">Richtig! Die Konten, die Beträge und beide Summen stimmen. Die Darstellung ist abgeschlossen.</div>');
+ const buttons=controls();buttons.append(button('Wieder bearbeiten',()=>{
+  completedSheets[prefix]=false;persistDraft();render();
+ },'secondary'));
+ buttons.append(button(nextText,()=>move(nextStep),'primary'));
+ w.append(buttons);
+}
 function dynamicSheetControls(w,prefix,buttonText,nextLabel,nextStep){
  const actions=controls();actions.append(button(buttonText,()=>{
-  readDynamicSheet(prefix);persistDraft();const errors=checkDynamicSheet(prefix);
-  info(errors.length?'Bitte überprüfe: '+errors.join(', ')+'.':'Richtig! Die Konten, ihre Zuordnung, Beträge und beide Summen stimmen.',!errors.length);
+  readDynamicSheet(prefix);const errors=checkDynamicSheet(prefix);
+  if(!errors.length){completedSheets[prefix]=true;persistDraft();render();return}
+  completedSheets[prefix]=false;persistDraft();info('Bitte überprüfe: '+errors.join(', ')+'.',false);
  }));
  actions.append(button(nextLabel,()=>move(nextStep),'secondary'));w.append(actions);
  w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>');
 }
 function openingStep(w){
- makeSection(w,'Eröffnungsbilanz','Wähle die benötigten Konten selbst aus, ordne sie Aktiven oder Passiven zu und ergänze die Anfangsbestände und Summen.');
+ makeSection(w,'Eröffnungsbilanz',completedSheets.op?'Deine korrekt geprüfte Eröffnungsbilanz in der Schweizer Gliederung.':'Wähle die benötigten Konten selbst aus, ordne sie Aktiven oder Passiven zu und ergänze die Anfangsbestände und Summen.');
+ if(completedSheets.op){renderFinishedSheet(w,'op','Zu den Buchungssätzen →',2);return}
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('op'));attachDynamicSheet(w,'op');
  dynamicSheetControls(w,'op','Eröffnungsbilanz prüfen','Zu den Buchungssätzen →',2);
 }
@@ -553,13 +599,15 @@ function showTransferButton(w,prefix,detail){
  el('transfer-sheet').onclick=()=>transferFinancialSheet(prefix);
 }
 function incomeStep(w){
- makeSection(w,'Erfolgsrechnung','Wähle die Aufwands- und Ertragskonten selbst. Übernimm deine EB aus den T-Konten oder füge mit ↧ einen kopierten Betrag ein.');
+ makeSection(w,'Erfolgsrechnung',completedSheets.er?'Deine korrekt geprüfte Erfolgsrechnung.':'Wähle die Aufwands- und Ertragskonten selbst aus oder übernimm deine Endbestände aus den T-Konten.');
+ if(completedSheets.er){renderFinishedSheet(w,'er','Zur Schlussbilanz →',5);return}
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('er'));attachDynamicSheet(w,'er');
  showTransferButton(w,'er','Konten und Beträge aus deinen T-Konten übernehmen. Den Gewinn kannst du anschliessend selbst ergänzen.');
  dynamicSheetControls(w,'er','Erfolgsrechnung prüfen','Zur Schlussbilanz →',5);
 }
 function balanceStep(w){
- makeSection(w,'Schlussbilanz','Wähle die Konten selbst aus und ordne sie Aktiven oder Passiven zu. Du kannst die EB aus den T-Konten übernehmen oder einzelne kopierte Beträge mit ↧ einfügen.');
+ makeSection(w,'Schlussbilanz',completedSheets.bs?'Deine korrekt geprüfte Schlussbilanz mit Umlauf- und Anlagevermögen sowie Fremd- und Eigenkapital.':'Wähle die Konten selbst aus und ordne sie Aktiven oder Passiven zu. Die Endbestände aus den T-Konten kannst du freiwillig übernehmen.');
+ if(completedSheets.bs){renderFinishedSheet(w,'bs','Zur Auswertung →',6);return}
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('bs'));attachDynamicSheet(w,'bs');
  showTransferButton(w,'bs','Übernimm Konten und Beträge aus deiner Kontenführung und gegebenenfalls den Jahresgewinn aus deiner Erfolgsrechnung.');
  dynamicSheetControls(w,'bs','Schlussbilanz prüfen','Zur Auswertung →',6);
@@ -567,7 +615,7 @@ function balanceStep(w){
 function resetEntireCase(){
  if(!confirm('Wirklich die gesamte Fallstudie «'+company+'» zurücksetzen? Alle Eingaben in Eröffnungsbilanz, Buchungssätzen, T-Konten, Erfolgsrechnung und Schlussbilanz gehen verloren.'))return;
  journal=[];ledgerAnswers={};ledgerTotals={};openedAccounts=[];accountResults={};
- erAnswers={};balanceAnswers={};openingAnswers={};storyAnswer='';for(const key of ['op','er','bs'])dynamicSheetRows[key]={left:[],right:[]};
+ erAnswers={};balanceAnswers={};openingAnswers={};storyAnswer='';for(const key of ['op','er','bs']){dynamicSheetRows[key]={left:[],right:[]};completedSheets[key]=false;}for(const a of Object.keys(lockedAccounts))delete lockedAccounts[a];
  Object.assign(ledgerPreferences,{ab:false,journal:false,sums:false});
  try{
   localStorage.removeItem(draftKey);
