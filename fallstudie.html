@@ -500,7 +500,7 @@ function runLedgerTransfers(){
   }
  }
  if(ledgerPreferences.journal){
-  for(const a of openedAccounts){if(lockedAccounts[a])continue;const data=ensureLedger(a);data.debit.entries=[];data.credit.entries=[]}
+  for(const a of targets){const data=ensureLedger(a);data.debit.entries=[];data.credit.entries=[]}
   for(const j of availableJournal){
    if(!lockedAccounts[j.debit])ensureLedger(j.debit).debit.entries.push(j.amount);
    if(!lockedAccounts[j.credit])ensureLedger(j.credit).credit.entries.push(j.amount);
