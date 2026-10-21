@@ -91,6 +91,24 @@
 .sheet-transfer .secondary{white-space:normal;font-size:13px}
 .sheet-transfer .mini{flex:1;min-width:175px}
 @media(max-width:670px){.fin-side-body .sheet-entry{grid-template-columns:minmax(100px,1fr) minmax(75px,1fr) 25px;gap:4px}.sheet-entry select,.sheet-entry input{font-size:12px;padding:8px 5px}}
+
+.amount-copy,.amount-paste{border:1px solid #ccdbe7;background:#f3f8fb;color:#37617e;border-radius:7px;cursor:pointer;font-size:12px;line-height:1;min-height:32px;min-width:30px;padding:6px}
+.amount-copy:hover,.amount-paste:hover{background:#e1f2e9;border-color:#75c9a3;color:#176b4b}
+.amount-copy:focus-visible,.amount-paste:focus-visible{outline:2px solid #20b38a;outline-offset:2px}
+.journal-value{display:flex;align-items:center;gap:6px;min-width:150px}
+.journal-value input{flex:1;min-width:90px}
+.journal-value .amount-copy{flex:none;white-space:nowrap;padding:8px;font-size:11px}
+.simple-line{grid-template-columns:65px minmax(0,1fr) 26px 26px}
+.simple-line.special,.simple-line.total-line{grid-template-columns:65px minmax(0,1fr) 26px 26px}
+.simple-line .amount-copy,.simple-line .amount-paste{min-width:26px;width:26px;height:29px;min-height:29px;padding:3px}
+.simple-line .amount-copy{background:#eff7fc}
+.simple-line .amount-paste{background:#eef8f1}
+.simple-line.special.eb-line .amount-copy{grid-column:3}
+.sheet-entry{grid-template-columns:minmax(125px,1fr) minmax(90px,135px) 28px 28px !important}
+.sheet-entry .amount-paste{min-width:28px;width:28px;height:34px}
+.copy-feedback{position:fixed;z-index:1000;bottom:22px;right:22px;max-width:320px;border-radius:10px;background:#203a53;color:white;box-shadow:0 8px 28px #1b354033;padding:12px 17px;font-size:13px;pointer-events:none}
+.copy-feedback[hidden]{display:none}
+@media(max-width:680px){.simple-line{grid-template-columns:49px minmax(0,1fr) 24px 24px;gap:3px}.simple-line.special,.simple-line.total-line{grid-template-columns:49px minmax(0,1fr) 24px 24px}.sheet-entry{grid-template-columns:minmax(85px,1fr) minmax(70px,1fr) 26px 26px !important;gap:4px}}
 </style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
@@ -105,7 +123,10 @@ const CASES={grundlagen:{title:'Dein erstes Geschäftsjahr',opening:{Bank:12000,
 {description:'Du verkaufst '+product+' auf Rechnung für CHF 1’500.',debit:'Forderungen LL',credit:'Warenertrag',amount:1500},
 {description:'Die Kundschaft bezahlt die offene Rechnung von CHF 1’500 per Bank.',debit:'Bank',credit:'Forderungen LL',amount:1500}
 ]}};
-const accounts=['Bank','Mobiliar','Forderungen LL','Verbindlichkeiten LL','Eigenkapital','Warenaufwand','Mietaufwand','Warenertrag'];
+const ACCOUNT_NUMBERS={'Bank':'1020','Forderungen LL':'1100','Mobiliar':'1510','Verbindlichkeiten LL':'2000','Eigenkapital':'2800','Warenertrag':'3200','Warenaufwand':'4200','Mietaufwand':'6000','Jahresgewinn':'2979'};
+const accountLabel=a=>(ACCOUNT_NUMBERS[a]?ACCOUNT_NUMBERS[a]+' · ':'')+a;
+const accountSort=(a,b)=>(Number(ACCOUNT_NUMBERS[a]||9999)-Number(ACCOUNT_NUMBERS[b]||9999));
+const accounts=Object.keys(ACCOUNT_NUMBERS).filter(a=>a!=='Jahresgewinn').sort(accountSort);
 const categories={Bank:'asset',Mobiliar:'asset','Forderungen LL':'asset','Verbindlichkeiten LL':'liability',Eigenkapital:'equity',Warenaufwand:'expense',Mietaufwand:'expense',Warenertrag:'revenue'};
 const CASE_SCALE={Fussball:12,Mode:16,Gaming:14,Gastronomie:5,Autos:25,Fitness:10,Reisen:18,Beauty:8,Musik:15};
 const factor=CASE_SCALE[world]||1;
@@ -219,7 +240,7 @@ function dynamicPane(prefix,side,label,idx){
  return '<section class="fin-side"><div class="fin-side-title">'+label+'</div><div class="fin-side-body">'
   +entries.map((row,i)=>'<div class="sheet-entry">'
     +'<select id="fs-'+prefix+'-'+side+'-a'+i+'" aria-label="'+label+' Konto auswählen"><option value="">Konto wählen</option>'
-    +choices.map(a=>'<option value="'+escapeText(a)+'" '+(row.account===a?'selected':'')+'>'+escapeText(a)+'</option>').join('')+'</select>'
+    +choices.slice().sort(accountSort).map(a=>'<option value="'+escapeText(a)+'" '+(row.account===a?'selected':'')+'>'+escapeText(accountLabel(a))+'</option>').join('')+'</select>'
     +'<input id="fs-'+prefix+'-'+side+'-v'+i+'" inputmode="decimal" value="'+escapeText(row.amount)+'" placeholder="CHF" aria-label="'+label+' Betrag">'
     +'<button type="button" data-fs-remove="'+side+'" data-idx="'+i+'" title="Zeile entfernen" aria-label="Zeile entfernen">×</button></div>').join('')
   +'<button class="sheet-add" type="button" data-fs-add="'+side+'">+ Konto hinzufügen</button></div>'
@@ -282,7 +303,7 @@ function openingStep(w){
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('op'));attachDynamicSheet(w,'op');
  dynamicSheetControls(w,'op','Eröffnungsbilanz prüfen','Zu den Buchungssätzen →',2);
 }
-const dropdown=()=>'<option value="">Konto wählen</option>'+accounts.map(a=>'<option>'+a+'</option>').join('');
+const dropdown=()=>'<option value="">Konto wählen</option>'+accounts.map(a=>'<option value="'+escapeText(a)+'">'+escapeText(accountLabel(a))+'</option>').join('');
 function journalStep(w){makeSection(w,'1. Journal führen','Lies alle Geschäftsfälle und bestimme Sollkonto, Habenkonto und Betrag. Prüfe danach deine Buchungen.');let wrap=document.createElement('div');wrap.className='tablewrap';wrap.innerHTML='<table><thead><tr><th>Nr.</th><th>Geschäftsfall</th><th>Soll</th><th>Haben</th><th>CHF</th></tr></thead><tbody>'+source.transactions.map((t,i)=>'<tr><td>'+(i+1)+'</td><td style="min-width:240px">'+t.description+'</td><td><select id="s'+i+'">'+dropdown()+'</select></td><td><select id="h'+i+'">'+dropdown()+'</select></td><td><input id="a'+i+'" inputmode="decimal" placeholder="Betrag"></td></tr>').join('')+'</tbody></table>';w.append(wrap);journal.forEach((x,i)=>{if(el('s'+i)){el('s'+i).value=x.debit;el('h'+i).value=x.credit;el('a'+i).value=x.amount}});let c=controls();c.append(button('Journal prüfen',()=>{journal=source.transactions.map((t,i)=>({debit:el('s'+i).value,credit:el('h'+i).value,amount:el('a'+i).value}));const wrong=journal.map((j,i)=>j.debit===source.transactions[i].debit&&j.credit===source.transactions[i].credit&&parseAmount(j.amount)===source.transactions[i].amount?null:i+1).filter(Boolean);info(wrong.length?'Noch nicht korrekt bei Geschäftsfällen: '+wrong.join(', ')+'. Prüfe Soll, Haben und Betrag.':'Alle sieben Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!wrong.length);persistDraft()}));let next=button('Zu den T-Konten →',()=>move(3));next.id='continue';c.append(next);w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>')}
 
 
@@ -419,7 +440,7 @@ function ledgerStep(w){
  +'<div class="buttons" style="margin-top:12px"><button type="button" class="secondary" id="apply-transfers">Ausgewählte Überträge ausführen</button></div>'
  +'<p class="mini">Die Überträge verwenden deine bisherigen Eingaben, auch wenn diese Fehler enthalten. EB musst du weiterhin selbst berechnen.</p></div>';w.append(settings);
  const toolbar=document.createElement('div');toolbar.className='account-toolbar';
- toolbar.innerHTML='<strong>Konto eröffnen</strong><select id="new-account"><option value="">Konto auswählen</option>'+accounts.filter(a=>!openedAccounts.includes(a)).map(a=>'<option value="'+a+'">'+a+'</option>').join('')+'</select><button type="button" class="primary" id="add-account">Eröffnen</button><span class="mini">'+openedAccounts.length+' / '+accounts.length+' Konten</span>';w.append(toolbar);
+ toolbar.innerHTML='<strong>Konto eröffnen</strong><select id="new-account"><option value="">Konto auswählen</option>'+accounts.filter(a=>!openedAccounts.includes(a)).map(a=>'<option value="'+a+'">'+escapeText(accountLabel(a))+'</option>').join('')+'</select><button type="button" class="primary" id="add-account">Eröffnen</button><span class="mini">'+openedAccounts.length+' / '+accounts.length+' Konten</span>';w.append(toolbar);
  const note=document.createElement('div');note.id='ledger-notice';note.className='mini ledger-notice';w.append(note);
  el('auto-ab').onchange=e=>{ledgerPreferences.ab=e.target.checked;persistDraft()};
  el('auto-journal').onchange=e=>{ledgerPreferences.journal=e.target.checked;persistDraft()};
@@ -431,7 +452,7 @@ function ledgerStep(w){
  for(const a of openedAccounts){
   const k=accounts.indexOf(a),data=ensureLedger(a);
   const box=document.createElement('article');box.className='account-box';
-  box.innerHTML='<h3>'+a+'</h3><div class="simple-ledger">'+ledgerSideHtml(k,'debit',data.debit)+ledgerSideHtml(k,'credit',data.credit)+'</div>'
+  box.innerHTML='<h3>'+escapeText(accountLabel(a))+'</h3><div class="simple-ledger">'+ledgerSideHtml(k,'debit',data.debit)+ledgerSideHtml(k,'credit',data.credit)+'</div>'
    +'<div class="ledger-transfer-actions"'+(ledgerPreferences.sums?' hidden':'')+'><span>Summe übernehmen:</span><button type="button" data-transfer="'+k+'" data-from="debit" title="Summe Soll auf die Habenseite übertragen">Soll → Haben</button><button type="button" data-transfer="'+k+'" data-from="credit" title="Summe Haben auf die Sollseite übertragen">Haben → Soll</button></div>'
    +'<div class="account-bottom"><button type="button" class="secondary" data-check="'+k+'">Konto prüfen</button><button type="button" class="secondary" data-close="'+k+'">Konto entfernen</button></div>'
    +'<div class="account-status'+(accountResults[a]?(accountResults[a].ok?' good':' bad'):'')+'" id="account-result-'+k+'">'+(accountResults[a]?escapeText(accountResults[a].message):'Noch nicht geprüft')+'</div>';
