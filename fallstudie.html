@@ -91,6 +91,7 @@ const original=CASES.grundlagen;
 const source={title:original.title,opening:Object.fromEntries(Object.entries(original.opening).map(([k,v])=>[k,v*factor])),transactions:original.transactions.map(t=>({...t,amount:t.amount*factor,description:t.description.replace(/CHF\s[\d’']+/,()=>'CHF '+new Intl.NumberFormat('de-CH').format(t.amount*factor))}))};
 const el=id=>document.getElementById(id);const CHF=n=>new Intl.NumberFormat('de-CH',{maximumFractionDigits:2}).format(n);const parseAmount=x=>Number(String(x).trim().replace(/[’'\s]/g,'').replace(',','.'));
 let step=0,journal=[],ledgerAnswers={},ledgerTotals={},openedAccounts=[],erAnswers={},balanceAnswers={},validations=[],openingAnswers={},storyAnswer='';let accountResults={};
+const ledgerPreferences={ab:false,journal:false,sums:false};
 const stages=['Geschichte','Eröffnungsbilanz','Buchungssätze','T-Konten','Erfolgsrechnung','Schlussbilanz','Auswertung'];
 function rows(){const entries=[];for(const [acc,n] of Object.entries(source.opening)){entries.push({account:acc,side:categories[acc]==='asset'?'debit':'credit',amount:n,origin:'Anfang'})}source.transactions.forEach((t,i)=>{entries.push({account:t.debit,side:'debit',amount:t.amount,origin:String(i+1)});entries.push({account:t.credit,side:'credit',amount:t.amount,origin:String(i+1)})});return entries}
 function balances(){const totals={};accounts.forEach(a=>totals[a]={debit:0,credit:0});rows().forEach(r=>totals[r.account][r.side]+=r.amount);return totals}
@@ -160,7 +161,6 @@ const dropdown=()=>'<option value="">Konto wählen</option>'+accounts.map(a=>'<o
 function journalStep(w){makeSection(w,'1. Journal führen','Lies alle Geschäftsfälle und bestimme Sollkonto, Habenkonto und Betrag. Prüfe danach deine Buchungen.');let wrap=document.createElement('div');wrap.className='tablewrap';wrap.innerHTML='<table><thead><tr><th>Nr.</th><th>Geschäftsfall</th><th>Soll</th><th>Haben</th><th>CHF</th></tr></thead><tbody>'+source.transactions.map((t,i)=>'<tr><td>'+(i+1)+'</td><td style="min-width:240px">'+t.description+'</td><td><select id="s'+i+'">'+dropdown()+'</select></td><td><select id="h'+i+'">'+dropdown()+'</select></td><td><input id="a'+i+'" inputmode="decimal" placeholder="Betrag"></td></tr>').join('')+'</tbody></table>';w.append(wrap);journal.forEach((x,i)=>{if(el('s'+i)){el('s'+i).value=x.debit;el('h'+i).value=x.credit;el('a'+i).value=x.amount}});let c=controls();c.append(button('Journal prüfen',()=>{journal=source.transactions.map((t,i)=>({debit:el('s'+i).value,credit:el('h'+i).value,amount:el('a'+i).value}));const wrong=journal.map((j,i)=>j.debit===source.transactions[i].debit&&j.credit===source.transactions[i].credit&&parseAmount(j.amount)===source.transactions[i].amount?null:i+1).filter(Boolean);info(wrong.length?'Noch nicht korrekt bei Geschäftsfällen: '+wrong.join(', ')+'. Prüfe Soll, Haben und Betrag.':'Alle sieben Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!wrong.length);persistDraft()}));let next=button('Zu den T-Konten →',()=>move(3));next.id='continue';c.append(next);w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>')}
 
 
-const ledgerPreferences={ab:false,journal:false,sums:false};
 function emptyLedger(){return {debit:{ab:'',entries:[],eb:''},credit:{ab:'',entries:[],eb:''}}}
 function ensureLedger(a){
  if(!ledgerAnswers[a]||Array.isArray(ledgerAnswers[a])){
@@ -232,7 +232,7 @@ function checkLedger(a){
   const gotAB=numericOrZero(actualAB);
   if(!Number.isFinite(gotAB)||gotAB!==expectedAB)errors.push(side==='debit'?'AB Soll':'AB Haben');
   const actualNumbers=actualBookings.map(numericOrZero).sort((x,y)=>x-y);
-  if(actualNumbers.length!==expectedBookings.length||actualNumbers.some((v,i)=>!Number.isFinite(v)||String(actualBookings.find(x=>numericOrZero(x)===v)??'').trim()===''||v!==expectedBookings[i]))errors.push('Buchungen '+(side==='debit'?'Soll':'Haben'));
+  if(actualBookings.some(v=>String(v??'').trim()===''||!Number.isFinite(parseAmount(v)))||actualNumbers.length!==expectedBookings.length||actualNumbers.some((v,i)=>v!==expectedBookings[i]))errors.push('Buchungen '+(side==='debit'?'Soll':'Haben'));
   const requiredEnd=side==='debit'?Math.max(0,totals[a].credit-totals[a].debit):Math.max(0,totals[a].debit-totals[a].credit);
   const gotEnd=numericOrZero(data[side].eb);
   if(!Number.isFinite(gotEnd)||gotEnd!==requiredEnd)errors.push('EB '+(side==='debit'?'Soll':'Haben'));
