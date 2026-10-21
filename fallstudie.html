@@ -780,6 +780,9 @@ function initAmountToolbar(){
  });
  updateAmountToolbar();
 }
+document.addEventListener('input',event=>{
+ if(event.target===selectedAmountField)updateAmountToolbar();
+});
 document.addEventListener('focusin',event=>{
  if(event.target.matches('input[inputmode="decimal"]'))selectAmountField(event.target);
  const readOnly=event.target.closest('[data-copy-value]');
