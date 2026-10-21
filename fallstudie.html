@@ -70,7 +70,16 @@
 .simple-add{display:block;width:100%;border:1px dashed #9acaaf;background:#f0f9f5;color:#177653;border-radius:8px;padding:9px;font-weight:750;margin-top:8px}
 .entry-label{font-size:11px;color:#76869a}
 @media(max-width:520px){.simple-side{padding:5px}.simple-line{grid-template-columns:50px minmax(0,1fr) 19px;gap:3px}.simple-line.special,.simple-line.total-line{grid-template-columns:50px minmax(0,1fr)}.simple-line button{width:19px}.simple-line input{font-size:12px}.simple-ledger{grid-template-columns:1fr}.simple-side:first-child{border-right:0;border-bottom:2px solid #aebfd2}}
-</style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
+
+.case-tools{display:flex;justify-content:flex-end;margin:-10px 0 12px}
+.reset-case{border:1px solid #e2d7d7;border-radius:9px;background:transparent;padding:9px 12px;font-size:12px;font-weight:700;color:#8b5050;cursor:pointer}
+.reset-case:hover{background:#fff3f2;border-color:#dca5a1}
+.ledger-transfer-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:11px}
+.ledger-transfer-actions[hidden]{display:none}
+.ledger-transfer-actions span{font-size:12px;color:#6b8093;margin-right:2px}
+.ledger-transfer-actions button{border:1px solid #b6dbc9;background:#eef8f2;color:#177457;border-radius:7px;padding:8px 10px;font-size:12px;font-weight:800;cursor:pointer}
+.ledger-transfer-actions button:hover{background:#ddf0e5}
+</style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
 const query=new URLSearchParams(location.search);const selected=query.get('welt');const world=Object.hasOwn(WORLD_DATA,selected)?selected:'Fussball';const company=WORLD_DATA[world][0],product=WORLD_DATA[world][1];
@@ -287,7 +296,7 @@ function runLedgerTransfers(){
  el('ledger-notice').textContent='Übernahme ausgeführt: '+(ledgerPreferences.ab?availableAB.length+' Anfangsbestände. ':'')+(ledgerPreferences.journal?availableJournal.length+' Buchungssätze.':'')+' Es werden deine Eingaben übernommen, nicht die Musterlösung.';
 }
 function ledgerStep(w){
- makeSection(w,'T-Konten führen','Eröffne Konten und erfasse die Buchungen sowie den Endbestand (EB). Nur Konten mit Anfangsbestand aus der Eröffnungsbilanz haben ein AB-Feld. Buchungsnummern sind nicht nötig.');
+ makeSection(w,'T-Konten führen','Eröffne die Konten und trage AB und Buchungen ein. Berechne die grössere Seitensumme selbst, übertrage sie auf die Gegenseite und ermittle daraus den EB. Buchungsnummern sind nicht nötig.');
  const settings=document.createElement('details');settings.className='ledger-settings';settings.innerHTML='<summary>Hilfen & Automatik <span class="muted">optional</span></summary><div class="ledger-settings-body">'
  +'<label class="ledger-option"><input type="checkbox" id="auto-ab" '+(ledgerPreferences.ab?'checked':'')+'> AB aus meiner Eröffnungsbilanz übernehmen</label>'
  +'<label class="ledger-option"><input type="checkbox" id="auto-journal" '+(ledgerPreferences.journal?'checked':'')+'> Buchungen aus meinem Journal übernehmen</label>'
@@ -308,6 +317,7 @@ function ledgerStep(w){
   const k=accounts.indexOf(a),data=ensureLedger(a);
   const box=document.createElement('article');box.className='account-box';
   box.innerHTML='<h3>'+a+'</h3><div class="simple-ledger">'+ledgerSideHtml(k,'debit',data.debit)+ledgerSideHtml(k,'credit',data.credit)+'</div>'
+   +'<div class="ledger-transfer-actions"'+(ledgerPreferences.sums?' hidden':'')+'><span>Summe übernehmen:</span><button type="button" data-transfer="'+k+'" data-from="debit" title="Summe Soll auf die Habenseite übertragen">Soll → Haben</button><button type="button" data-transfer="'+k+'" data-from="credit" title="Summe Haben auf die Sollseite übertragen">Haben → Soll</button></div>'
    +'<div class="account-bottom"><button type="button" class="secondary" data-check="'+k+'">Konto prüfen</button><button type="button" class="secondary" data-close="'+k+'">Konto entfernen</button></div>'
    +'<div class="account-status'+(accountResults[a]?(accountResults[a].ok?' good':' bad'):'')+'" id="account-result-'+k+'">'+(accountResults[a]?escapeText(accountResults[a].message):'Noch nicht geprüft')+'</div>';
   grid.append(box);
@@ -324,6 +334,23 @@ function ledgerStep(w){
   }
   if(b.dataset.del!==undefined){
    captureLedgers();ensureLedger(a)[b.dataset.side].entries.splice(Number(b.dataset.index),1);delete accountResults[a];persistDraft();render();return;
+  }
+  if(b.dataset.transfer!==undefined){
+   const from=b.dataset.from,to=from==='debit'?'credit':'debit';
+   const fromField=el('ltotal'+k+(from==='debit'?'d':'c'));
+   const toField=el('ltotal'+k+(to==='debit'?'d':'c'));
+   const value=fromField?.value.trim()??'';
+   if(!value||!Number.isFinite(parseAmount(value))||parseAmount(value)<0){
+    const notice=el('account-result-'+k);
+    notice.textContent='Trage zuerst eine gültige Summe auf der '+(from==='debit'?'Soll':'Haben')+'seite ein.';
+    notice.className='account-status bad';
+    fromField?.focus();return;
+   }
+   toField.value=formattedAmount(value);
+   captureLedgers();persistDraft();
+   const notice=el('account-result-'+k);
+   notice.textContent='Summe '+formattedAmount(value)+' von '+(from==='debit'?'Soll':'Haben')+' nach '+(to==='debit'?'Soll':'Haben')+' übernommen. EB musst du selbst berechnen und eintragen.';
+   notice.className='account-status';return;
   }
   if(b.dataset.check!==undefined){
    captureLedgers();persistDraft();const result=checkLedger(a);accountResults[a]=result;
@@ -358,6 +385,23 @@ function balanceStep(w){
  w.insertAdjacentHTML('beforeend',sheetMarkup('Schlussbilanz','Aktiven','Passiven',['Bank','Mobiliar','Forderungen LL'],['Verbindlichkeiten LL','Eigenkapital inklusive Gewinn'],'bs',balanceAnswers));
  const c=controls();c.append(button('Schlussbilanz prüfen',()=>{sheetRead('bs',closingKeys,balanceAnswers);persistDraft();const wrong=sheetCheck(closingKeys,values,balanceAnswers,total);info(wrong.length?'Kontrolliere: '+wrong.join(', ')+'.':'Richtig! Beide Bilanzseiten ergeben CHF '+CHF(total)+'.',!wrong.length)}));c.append(button('Zur Auswertung →',()=>move(6),'secondary'));w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>');
 }
+
+function resetEntireCase(){
+ if(!confirm('Wirklich die gesamte Fallstudie «'+company+'» zurücksetzen? Alle Eingaben in Eröffnungsbilanz, Buchungssätzen, T-Konten, Erfolgsrechnung und Schlussbilanz gehen verloren.'))return;
+ journal=[];ledgerAnswers={};ledgerTotals={};openedAccounts=[];accountResults={};
+ erAnswers={};balanceAnswers={};openingAnswers={};storyAnswer='';
+ Object.assign(ledgerPreferences,{ab:false,journal:false,sums:false});
+ try{
+  localStorage.removeItem(draftKey);
+  localStorage.removeItem('bookit-draft-v4-'+world);
+  for(const key of ['bookit-cases-v1','bookit-cases-v2']){
+   const saved=JSON.parse(localStorage.getItem(key)||'[]');
+   if(Array.isArray(saved))localStorage.setItem(key,JSON.stringify(saved.filter(record=>!(record.world===world&&record.caseId==='grundlagen'))));
+  }
+ }catch(e){}
+ step=0;
+ render();
+}
 function review(w){
  makeSection(w,'Dein Arbeitsstand','Kontrolliere den Stand deiner Buchhaltung. Du kannst alle Bereiche jederzeit nochmals bearbeiten.');
  const openingOk=sheetCheck(openingKeys,source.opening,openingAnswers,source.opening.Eigenkapital).length===0;
@@ -378,7 +422,7 @@ function review(w){
  }else{
   const note=document.createElement('p');note.className='muted';note.textContent='Einige Bereiche sind noch nicht korrekt oder unvollständig. Du kannst sie in beliebiger Reihenfolge bearbeiten und später wieder hierher zurückkehren.';w.append(note);
  }
- const c=controls();c.append(button('Fallstudie zurücksetzen',()=>{if(!confirm('Alle Eingaben dieser Fallstudie löschen?'))return;journal=[];ledgerAnswers={};ledgerTotals={};openedAccounts=[];accountResults={};erAnswers={};balanceAnswers={};openingAnswers={};persistDraft();move(0)},'secondary'));c.append(button('Zu den Themenwelten',()=>location.href='index.html','secondary'));w.append(c);
+ const c=controls();c.append(button('Fallstudie zurücksetzen',resetEntireCase,'secondary'));c.append(button('Zu den Themenwelten',()=>location.href='index.html','secondary'));w.append(c);
 }
 document.addEventListener('focusout',e=>{
  const input=e.target;
@@ -392,5 +436,6 @@ document.addEventListener('focusout',e=>{
  }
 },true);
 
+el('reset-entire-case').addEventListener('click',resetEntireCase);
 render();
 </script></body></html>
