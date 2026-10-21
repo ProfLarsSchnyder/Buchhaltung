@@ -131,11 +131,19 @@
 .read-only-side .eb-line{margin-top:auto}
 @media(max-width:680px){.read-only-line{grid-template-columns:49px minmax(0,1fr)}}
 
-.amount-context-menu{position:fixed;z-index:2000;display:flex;gap:7px;padding:7px;border:1px solid #c9e0d7;border-radius:10px;background:#fff;box-shadow:0 9px 28px #20385024}
-.amount-context-menu[hidden]{display:none}
-.amount-context-menu button{font-size:12px;font-weight:800;color:#17694e;border-radius:7px;padding:9px 13px;border:1px solid #b8deca;background:#f0faf4;cursor:pointer;white-space:nowrap}
-.amount-context-menu button:hover{background:#dcf3e5}
-.amount-context-menu button:disabled{background:#f5f6f8;border-color:#e4e9ee;color:#9ba9b5;cursor:default}
+
+.amount-toolbar{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:2000;display:flex;align-items:center;gap:8px;max-width:calc(100vw - 24px);background:#fff;border:1px solid #c9dfd5;border-radius:13px;box-shadow:0 7px 25px #19375024;padding:9px 11px}
+.amount-toolbar-status{font-size:12px;color:#637b8b;font-weight:650;white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis;padding:0 5px}
+.amount-toolbar button{border:1px solid #a7d8be;background:#e8f7ee;color:#167050;font-weight:800;font-size:12px;border-radius:8px;cursor:pointer;padding:10px 13px;white-space:nowrap}
+.amount-toolbar button:hover:not(:disabled){background:#d6f0e0}
+.amount-toolbar button:disabled{background:#f3f5f6;color:#9caab6;border-color:#e4ebee;cursor:default}
+.amount-toolbar [data-number-action="paste"]{background:#e9f3fa;border-color:#bdcfdf;color:#315d7d}
+.amount-toolbar [data-number-action="paste"]:hover:not(:disabled){background:#dcebf6}
+.amount-toolbar [data-number-action="paste"]:disabled{background:#f3f5f6;border-color:#e4ebee;color:#9caab6}
+input.amount-selected{outline:2px solid #20a982;outline-offset:1px}
+.copy-feedback{bottom:calc(79px + env(safe-area-inset-bottom,0px));right:18px}
+main{padding-bottom:125px}
+@media(max-width:520px){.amount-toolbar{gap:5px;padding:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px))}.amount-toolbar-status{font-size:11px;max-width:92px}.amount-toolbar button{padding:9px 10px;font-size:11px}.copy-feedback{bottom:calc(70px + env(safe-area-inset-bottom,0px));right:10px}main{padding-bottom:120px}}
 .sheet-entry{grid-template-columns:minmax(125px,1fr) minmax(90px,135px) 28px!important}
 .simple-side:not(.read-only-side) .simple-line{grid-template-columns:65px minmax(0,1fr) 26px}
 .simple-side:not(.read-only-side) .simple-line.special,.simple-side:not(.read-only-side) .simple-line.total-line{grid-template-columns:65px minmax(0,1fr)}
@@ -200,6 +208,7 @@ function render(){
  el('subtitle').textContent='Alle Bereiche sind jederzeit erreichbar. Du kannst deine Eingaben auf jeder Seite separat überprüfen.';
  el('steps').innerHTML=stages.map((name,i)=>'<button type="button" data-step="'+i+'" class="step '+(i===step?'current':'')+'">'+name+'</button>').join('');
  el('steps').querySelectorAll('[data-step]').forEach(b=>b.addEventListener('click',()=>move(Number(b.dataset.step))));
+ clearSelectedAmount();
  const w=el('workspace');w.innerHTML='';
  if(step===0)intro(w);
  if(step===1)openingStep(w);
@@ -688,7 +697,8 @@ function review(w){
 }
 
 
-let lastCopiedAmount='',amountToastTimer=null,activeAmountInput=null,amountContextMenu=null;
+
+let lastCopiedAmount='',amountToastTimer=null,selectedAmountField=null,selectedReadOnlyValue=null,amountToolbar=null;
 function showCopyFeedback(message){
  let toast=document.getElementById('copy-feedback');
  if(!toast){toast=document.createElement('div');toast.id='copy-feedback';toast.className='copy-feedback';toast.setAttribute('role','status');document.body.appendChild(toast)}
@@ -700,59 +710,87 @@ function copyUserAmount(value){
  const raw=String(value??'').trim();
  if(!raw||!Number.isFinite(parseAmount(raw))){showCopyFeedback('Bitte zuerst einen gültigen Betrag eingeben.');return}
  lastCopiedAmount=formattedAmount(raw);
+ updateAmountToolbar();
  try{if(navigator.clipboard?.writeText)navigator.clipboard.writeText(lastCopiedAmount).catch(()=>{})}catch(e){}
  showCopyFeedback(lastCopiedAmount+' kopiert.');
 }
-function hideAmountContext(){
- if(amountContextMenu)amountContextMenu.hidden=true;
- activeAmountInput=null;
+function clearSelectedAmount(){
+ if(selectedAmountField?.classList)selectedAmountField.classList.remove('amount-selected');
+ selectedAmountField=null;selectedReadOnlyValue=null;
+ updateAmountToolbar();
 }
-function showAmountContext(input){
- if(!input||!input.isConnected)return;
- activeAmountInput=input;
- if(!amountContextMenu){
-  amountContextMenu=document.createElement('div');
-  amountContextMenu.className='amount-context-menu';
-  amountContextMenu.id='amount-context-menu';
-  amountContextMenu.innerHTML='<button type="button" data-number-action="copy">⧉ Kopieren</button><button type="button" data-number-action="paste">↧ Einfügen</button>';
-  amountContextMenu.addEventListener('pointerdown',event=>event.preventDefault());
-  amountContextMenu.addEventListener('click',async event=>{
-   const btn=event.target.closest('[data-number-action]');if(!btn)return;
-   const field=activeAmountInput,action=btn.dataset.numberAction;
-   if(!field||!field.isConnected){hideAmountContext();return}
-   if(action==='copy'){copyUserAmount(field.value);hideAmountContext();return}
-   if(field.readOnly||field.disabled){showCopyFeedback('Dieses Feld lässt sich nicht bearbeiten.');return}
-   let value=lastCopiedAmount;
-   if(!value&&navigator.clipboard?.readText){try{value=await navigator.clipboard.readText()}catch(e){}}
-   if(!value||!Number.isFinite(parseAmount(value))){showCopyFeedback('Bitte zuerst einen Betrag kopieren.');return}
-   field.value=formattedAmount(value);
-   field.dispatchEvent(new Event('input',{bubbles:true}));
-   remember();
-   hideAmountContext();
-   showCopyFeedback(field.value+' eingefügt.');
-  });
-  document.body.appendChild(amountContextMenu);
+function selectAmountField(input){
+ if(selectedAmountField!==input){
+  if(selectedAmountField?.classList)selectedAmountField.classList.remove('amount-selected');
+  selectedAmountField=input;
  }
- const paste=amountContextMenu.querySelector('[data-number-action="paste"]');
- paste.disabled=!!(input.readOnly||input.disabled);
- amountContextMenu.hidden=false;
- const rect=input.getBoundingClientRect(),width=amountContextMenu.offsetWidth||210;
- amountContextMenu.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-width-8))+'px';
- const above=rect.bottom+amountContextMenu.offsetHeight+8>window.innerHeight&&rect.top>amountContextMenu.offsetHeight+8;
- amountContextMenu.style.top=Math.max(8,above?rect.top-amountContextMenu.offsetHeight-5:rect.bottom+5)+'px';
+ selectedReadOnlyValue=null;
+ if(input?.classList)input.classList.add('amount-selected');
+ updateAmountToolbar();
+}
+function selectReadOnlyAmount(element){
+ if(selectedAmountField?.classList)selectedAmountField.classList.remove('amount-selected');
+ selectedAmountField=null;selectedReadOnlyValue=element;
+ updateAmountToolbar();
+}
+function selectedAmount(){
+ if(selectedAmountField?.isConnected)return selectedAmountField.value;
+ if(selectedReadOnlyValue?.isConnected)return selectedReadOnlyValue.dataset.copyValue;
+ return '';
+}
+function updateAmountToolbar(){
+ if(!amountToolbar)return;
+ const field=selectedAmountField?.isConnected?selectedAmountField:null;
+ const readOnly=selectedReadOnlyValue?.isConnected?selectedReadOnlyValue:null;
+ const selected=!!(field||readOnly);
+ const label=amountToolbar.querySelector('.amount-toolbar-status');
+ const copy=amountToolbar.querySelector('[data-number-action="copy"]');
+ const paste=amountToolbar.querySelector('[data-number-action="paste"]');
+ const value=selectedAmount();
+ label.textContent=!selected?'Zahlenfeld wählen':value.trim()&&Number.isFinite(parseAmount(value))?formattedAmount(value):'Zahlenfeld ausgewählt';
+ copy.disabled=!selected||!value.trim()||!Number.isFinite(parseAmount(value));
+ paste.disabled=!field||field.readOnly||field.disabled||(!lastCopiedAmount&&!navigator.clipboard?.readText);
+}
+function initAmountToolbar(){
+ if(amountToolbar)return;
+ amountToolbar=document.createElement('div');
+ amountToolbar.className='amount-toolbar';
+ amountToolbar.id='amount-toolbar';
+ amountToolbar.setAttribute('role','group');
+ amountToolbar.setAttribute('aria-label','Beträge kopieren oder einfügen');
+ amountToolbar.innerHTML='<span class="amount-toolbar-status" aria-live="polite">Zahlenfeld wählen</span><button type="button" data-number-action="copy">⧉ Kopieren</button><button type="button" data-number-action="paste">↧ Einfügen</button>';
+ document.body.appendChild(amountToolbar);
+ amountToolbar.addEventListener('pointerdown',event=>{
+  if(event.target.closest('button'))event.preventDefault();
+ });
+ amountToolbar.addEventListener('click',async event=>{
+  const b=event.target.closest('[data-number-action]');
+  if(!b||b.disabled)return;
+  if(b.dataset.numberAction==='copy'){copyUserAmount(selectedAmount());return}
+  const field=selectedAmountField?.isConnected?selectedAmountField:null;
+  if(!field||field.readOnly||field.disabled){showCopyFeedback('Bitte ein bearbeitbares Zahlenfeld auswählen.');return}
+  let value=lastCopiedAmount;
+  if(!value&&navigator.clipboard?.readText){try{value=await navigator.clipboard.readText()}catch(e){}}
+  if(!value||!Number.isFinite(parseAmount(value))){showCopyFeedback('Bitte zuerst einen Betrag kopieren.');return}
+  field.value=formattedAmount(value);
+  field.dispatchEvent(new Event('input',{bubbles:true}));
+  remember();
+  updateAmountToolbar();
+  showCopyFeedback(field.value+' eingefügt.');
+ });
+ updateAmountToolbar();
 }
 document.addEventListener('focusin',event=>{
- if(event.target.matches('input[inputmode="decimal"]'))showAmountContext(event.target);
+ if(event.target.matches('input[inputmode="decimal"]'))selectAmountField(event.target);
+ const readOnly=event.target.closest('[data-copy-value]');
+ if(readOnly)selectReadOnlyAmount(readOnly);
 });
 document.addEventListener('click',event=>{
- const target=event.target;
- if(target.closest('#amount-context-menu'))return;
- const previous=target.closest('[data-copy-value]');
- if(previous){copyUserAmount(previous.dataset.copyValue);hideAmountContext();return}
- if(target.matches('input[inputmode="decimal"]')){showAmountContext(target);return}
- hideAmountContext();
+ if(event.target.closest('#amount-toolbar'))return;
+ const readOnly=event.target.closest('[data-copy-value]');
+ if(readOnly){selectReadOnlyAmount(readOnly);return}
+ if(event.target.matches('input[inputmode="decimal"]'))selectAmountField(event.target);
 });
-document.addEventListener('scroll',hideAmountContext,true);
 document.addEventListener('focusout',e=>{
  const input=e.target;
  if(!(input instanceof HTMLInputElement)||input.getAttribute('inputmode')!=='decimal'||input.readOnly)return;
@@ -766,5 +804,6 @@ document.addEventListener('focusout',e=>{
 },true);
 
 el('reset-entire-case').addEventListener('click',resetEntireCase);
+initAmountToolbar();
 render();
 </script></body></html>
