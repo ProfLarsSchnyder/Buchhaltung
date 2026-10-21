@@ -148,6 +148,11 @@ main{padding-bottom:125px}
 .simple-side:not(.read-only-side) .simple-line{grid-template-columns:65px minmax(0,1fr) 26px}
 .simple-side:not(.read-only-side) .simple-line.special,.simple-side:not(.read-only-side) .simple-line.total-line{grid-template-columns:65px minmax(0,1fr)}
 @media(max-width:680px){.sheet-entry{grid-template-columns:minmax(85px,1fr) minmax(70px,1fr) 26px!important}.simple-side:not(.read-only-side) .simple-line{grid-template-columns:49px minmax(0,1fr) 24px}.simple-side:not(.read-only-side) .simple-line.special,.simple-side:not(.read-only-side) .simple-line.total-line{grid-template-columns:49px minmax(0,1fr)}}
+
+.amount-toolbar [data-number-action="calculate"]{background:#eaf2fe;border-color:#bfcfea;color:#315b88}
+.amount-toolbar [data-number-action="calculate"]:hover:not(:disabled){background:#dceafa}
+.amount-toolbar [data-number-action="calculate"]:disabled{background:#f3f5f6;border-color:#e4ebee;color:#9caab6}
+@media(max-width:650px){.amount-toolbar{gap:4px;padding:7px}.amount-toolbar-status{max-width:74px;font-size:10px}.amount-toolbar button{font-size:10px;padding:8px 7px}}
 </style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
@@ -735,6 +740,46 @@ function selectedAmount(){
  if(selectedReadOnlyValue?.isConnected)return selectedReadOnlyValue.dataset.copyValue;
  return '';
 }
+
+function isSumField(field){
+ if(!field||!field.isConnected||field.readOnly||field.disabled)return false;
+ return /^(?:op|er|bs)T[01]$/.test(field.id)||/^ltotal\d+[dc]$/.test(field.id);
+}
+function sumFieldInputs(field){
+ const sheet=/^(op|er|bs)T([01])$/.exec(field.id);
+ if(sheet){
+  const prefix=sheet[1],side=sheet[2]==='0'?'left':'right';
+  return dynamicSheetRows[prefix][side].map((row,i)=>el('fs-'+prefix+'-'+side+'-v'+i)).filter(Boolean);
+ }
+ const ledger=/^ltotal(\d+)([dc])$/.exec(field.id);
+ if(ledger){
+  const k=Number(ledger[1]),a=accounts[k],tag=ledger[2],side=tag==='d'?'debit':'credit';
+  if(!a||!openedAccounts.includes(a)||lockedAccounts[a])return [];
+  const data=ensureLedger(a)[side];
+  const inputs=[el('lab'+k+tag),...data.entries.map((_,i)=>el('lentry'+k+tag+i)),el('leb'+k+tag)];
+  return inputs.filter(Boolean);
+ }
+ return [];
+}
+function calculateSelectedSum(){
+ const field=selectedAmountField;
+ if(!isSumField(field)){showCopyFeedback('Bitte zuerst ein Summenfeld auswählen.');return}
+ const inputs=sumFieldInputs(field);
+ let total=0,count=0;
+ for(const input of inputs){
+  const raw=String(input.value??'').trim();
+  if(!raw)continue;
+  const value=parseAmount(raw);
+  if(!Number.isFinite(value)){showCopyFeedback('Eine Zahl ist ungültig. Bitte überprüfe die Beträge.');return}
+  total+=value;count++;
+ }
+ if(!count){showCopyFeedback('Trage zuerst mindestens einen Betrag auf dieser Seite ein.');return}
+ field.value=formattedAmount(Math.round((total+Number.EPSILON)*100)/100);
+ field.dispatchEvent(new Event('input',{bubbles:true}));
+ remember();
+ updateAmountToolbar();
+ showCopyFeedback('Summe '+field.value+' aus '+count+' Betrag'+(count===1?'':'en')+' berechnet.');
+}
 function updateAmountToolbar(){
  if(!amountToolbar)return;
  const field=selectedAmountField?.isConnected?selectedAmountField:null;
@@ -743,10 +788,12 @@ function updateAmountToolbar(){
  const label=amountToolbar.querySelector('.amount-toolbar-status');
  const copy=amountToolbar.querySelector('[data-number-action="copy"]');
  const paste=amountToolbar.querySelector('[data-number-action="paste"]');
+ const calculate=amountToolbar.querySelector('[data-number-action="calculate"]');
  const value=selectedAmount();
  label.textContent=!selected?'Zahlenfeld wählen':value.trim()&&Number.isFinite(parseAmount(value))?formattedAmount(value):'Zahlenfeld ausgewählt';
  copy.disabled=!selected||!value.trim()||!Number.isFinite(parseAmount(value));
  paste.disabled=!field||field.readOnly||field.disabled||(!lastCopiedAmount&&!navigator.clipboard?.readText);
+ calculate.disabled=!isSumField(field);
 }
 function initAmountToolbar(){
  if(amountToolbar)return;
@@ -754,8 +801,8 @@ function initAmountToolbar(){
  amountToolbar.className='amount-toolbar';
  amountToolbar.id='amount-toolbar';
  amountToolbar.setAttribute('role','group');
- amountToolbar.setAttribute('aria-label','Beträge kopieren oder einfügen');
- amountToolbar.innerHTML='<span class="amount-toolbar-status" aria-live="polite">Zahlenfeld wählen</span><button type="button" data-number-action="copy">⧉ Kopieren</button><button type="button" data-number-action="paste">↧ Einfügen</button>';
+ amountToolbar.setAttribute('aria-label','Beträge kopieren, einfügen oder Summe berechnen');
+ amountToolbar.innerHTML='<span class="amount-toolbar-status" aria-live="polite">Zahlenfeld wählen</span><button type="button" data-number-action="copy">⧉ Kopieren</button><button type="button" data-number-action="paste">↧ Einfügen</button><button type="button" data-number-action="calculate" title="Alle eingetragenen Beträge auf dieser Seite addieren">∑ Summe berechnen</button>';
  document.body.appendChild(amountToolbar);
  amountToolbar.addEventListener('pointerdown',event=>{
   if(event.target.closest('button'))event.preventDefault();
@@ -764,6 +811,7 @@ function initAmountToolbar(){
   const b=event.target.closest('[data-number-action]');
   if(!b||b.disabled)return;
   if(b.dataset.numberAction==='copy'){copyUserAmount(selectedAmount());return}
+  if(b.dataset.numberAction==='calculate'){calculateSelectedSum();return}
   const field=selectedAmountField?.isConnected?selectedAmountField:null;
   if(!field||field.readOnly||field.disabled){showCopyFeedback('Bitte ein bearbeitbares Zahlenfeld auswählen.');return}
   let value=lastCopiedAmount;
