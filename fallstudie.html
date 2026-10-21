@@ -212,6 +212,22 @@ main{padding-bottom:70px}
  main{padding-bottom:70px}
  .copy-feedback{bottom:20px;right:10px}
 }
+
+.learning-review{margin:22px 0;padding:18px 20px;border:1px solid #dde8ed;border-radius:13px;background:#fbfdfd}
+.learning-review h3{margin:0 0 14px;color:#253b55}
+.learning-review h4{margin:17px 0 7px;font-size:14px}
+.review-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.review-metrics>div{display:flex;flex-direction:column;gap:5px;padding:12px;border-radius:9px;background:#eef4f8}
+.review-metrics strong{font-size:23px;color:#1c4d69;font-variant-numeric:tabular-nums}
+.review-metrics span{font-size:12px;color:#5e7283}
+.review-help-list{list-style:none;margin:7px 0;padding:0}
+.review-help-list li{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #e6eef1;font-size:13px}
+.review-help-list strong{color:#147657}
+.review-help-list .review-no-help{color:#77879c;border-bottom:0}
+.story-finale{margin:20px 0 18px;padding:19px 21px;border-radius:13px;background:#eff8f2;border:1px solid #c8e7d7}
+.story-finale h3{margin:0 0 10px;color:#176948}
+.story-finale p{margin:8px 0;line-height:1.6}
+@media(max-width:500px){.learning-review{padding:14px}.review-metrics{gap:6px}.review-metrics>div{padding:9px 7px}.review-metrics strong{font-size:20px}.review-metrics span{font-size:11px}}
 </style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
@@ -838,6 +854,39 @@ function resetEntireCase(){
  step=0;
  render();
 }
+
+const WORLD_FINALES={
+ Fussball:'Der Fanartikelbereich des FC Basel hat seine Einkäufe, Verkäufe und Zahlungen im Griff. Mit deiner vollständigen Buchhaltung lässt sich nun zeigen, wie erfolgreich der Saisonstart war.',
+ Mode:'Die neue Kollektion ist verbucht: Vom Einkauf der Sportschuhe bis zu den ersten Kundenzahlungen ist alles nachvollziehbar. Du hast die fiktive On-Verkaufsstelle finanziell sauber abgeschlossen.',
+ Gaming:'Das Gaming-Wochenende bei der fiktiven Digitec-Verkaufsstelle ist abgerechnet. Dank deiner Buchhaltung stimmen die Konten und der Betrieb kennt sein Ergebnis.',
+ Gastronomie:'Die gut besuchte Woche im fiktiven tibits-Lokal ist vorbei. Einkäufe, Verkaufserlöse und Betriebskosten sind erfasst, sodass die Geschäftsleitung den Abschluss auswerten kann.',
+ Autos:'Der fiktive BMW-Showroom hat seine Verkaufsaktion abgeschlossen. Deine Buchführung zeigt jetzt nachvollziehbar, was die Ausstattung, die Geschäfte und die Zahlungen finanziell bewirkt haben.',
+ Fitness:'Der neue Trainingsbereich des fiktiven update-Fitness-Standorts ist buchhalterisch abgeschlossen. Geräte, Betriebskosten und Einnahmen sind sauber dokumentiert.',
+ Reisen:'Die fiktive SWISS-Verkaufsstelle hat ihre Feriengeschäfte abgerechnet. Mit deiner vollständigen Buchhaltung sind die Zahlungen, Forderungen und das Jahresergebnis übersichtlich.',
+ Beauty:'Das neue Sortiment der fiktiven Import-Parfumerie-Filiale ist finanziell erfasst. Deine Bilanz und Erfolgsrechnung zeigen, was aus den ersten Verkäufen und Aufwendungen geworden ist.',
+ Musik:'Das OpenAir St. Gallen ist vorbei und der fiktive Merchandise-Stand hat seine Kasse bilanziert. Deine Buchhaltung macht sichtbar, was die Verkäufe und die Ausgaben gebracht haben.'
+};
+function learnerStatisticsHTML(){
+ const helpNames=[
+  ['AB aus Eröffnungsbilanz',activityStats.helps.opening],
+  ['Buchungssätze ins T-Konto',activityStats.helps.journal],
+  ['Automatische T-Konten-Summen',activityStats.helps.autoSums],
+  ['Übernahme in die Erfolgsrechnung',activityStats.helps.income],
+  ['Übernahme in die Schlussbilanz',activityStats.helps.balance],
+  ['Summe berechnen',activityStats.helps.sumButton]
+ ];
+ const used=helpNames.filter(x=>x[1]>0);
+ const tools=[['Kopieren',activityStats.helps.copy],['Einfügen',activityStats.helps.paste]].filter(x=>x[1]>0);
+ const rows=used.length?used.map(([name,n])=>'<li><span>'+escapeText(name)+'</span><strong>'+n+'×</strong></li>').join(''):'<li class="review-no-help">Keine Hilfen verwendet</li>';
+ return '<section class="learning-review"><h3>Dein Lernweg</h3>'
+  +'<div class="review-metrics">'
+  +'<div><strong>'+activityStats.checks+'</strong><span>Prüfungen</span></div>'
+  +'<div><strong>'+activityStats.failedChecks+'</strong><span>Fehlversuche</span></div>'
+  +'<div><strong>'+activityStats.errorNotices+'</strong><span>Fehlerhinweise</span></div>'
+  +'</div><h4>Genutzte Hilfen</h4><ul class="review-help-list">'+rows+'</ul>'
+  +(tools.length?'<p class="mini">Weitere Werkzeuge: '+tools.map(([name,n])=>escapeText(name)+' '+n+'×').join(' · ')+'</p>':'')
+  +'<p class="mini">Erfasst ab dieser Version. Bei einer erneuten falschen Prüfung können dieselben Fehler nochmals gezählt werden.</p></section>';
+}
 function review(w){
  makeSection(w,'Dein Arbeitsstand','Kontrolliere den Stand deiner Buchhaltung. Du kannst alle Bereiche jederzeit nochmals bearbeiten.');
  const openingOk=checkDynamicSheet('op').length===0;
@@ -852,8 +901,14 @@ function review(w){
  const box=document.createElement('div');box.className='scenario';box.innerHTML=status.map(([title,ok,num])=>'<div class="resultrow" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #cfdfec"><strong>'+title+'</strong><button type="button" data-review-step="'+num+'" class="secondary" style="padding:8px 12px">'+(ok?'✓ Korrekt':'Noch bearbeiten →')+'</button></div>').join('');w.append(box);
  box.querySelectorAll('[data-review-step]').forEach(b=>b.addEventListener('click',()=>move(Number(b.dataset.reviewStep))));
  const completed=status.every(x=>x[1]);
+ w.insertAdjacentHTML('beforeend',learnerStatisticsHTML());
  if(completed){
-  w.insertAdjacentHTML('beforeend','<div class="summary" style="margin-top:18px"><div>Jahresgewinn<strong>CHF '+CHF(profit)+'</strong></div><div>Bilanzsumme<strong>CHF '+CHF(total)+'</strong></div><div>Geschäftsfälle<strong>'+source.transactions.length+'</strong></div></div><div class="message good">Gratulation! Deine gesamte Buchhaltung ist korrekt.</div>');
+  w.insertAdjacentHTML('beforeend','<div class="summary" style="margin-top:18px"><div>Jahresgewinn<strong>CHF '+CHF(profit)+'</strong></div><div>Bilanzsumme<strong>CHF '+CHF(total)+'</strong></div><div>Geschäftsfälle<strong>'+source.transactions.length+'</strong></div></div>'
+   +'<div class="story-finale"><h3>Mission erfüllt: '+escapeText(company)+'</h3><p>'+escapeText(WORLD_FINALES[world]||'Du hast die Buchhaltung dieses fiktiven Unternehmens erfolgreich abgeschlossen.')+'</p><p><strong>'+(
+     profit>0?'Der fiktive Betrieb schliesst mit CHF '+CHF(profit)+' Gewinn ab.':
+     profit<0?'Der fiktive Betrieb schliesst mit CHF '+CHF(Math.abs(profit))+' Verlust ab.':
+     'Der fiktive Betrieb schliesst mit einem ausgeglichenen Ergebnis ab.'
+   )+'</strong></p></div>');
   try{const key='bookit-cases-v2';const history=JSON.parse(localStorage.getItem(key)||'[]');if(!history.some(x=>x.world===world&&x.caseId==='grundlagen')){history.push({world,caseId:'grundlagen',at:new Date().toISOString(),profit,amount:total});localStorage.setItem(key,JSON.stringify(history))}}catch(e){}
  }else{
   const note=document.createElement('p');note.className='muted';note.textContent='Einige Bereiche sind noch nicht korrekt oder unvollständig. Du kannst sie in beliebiger Reihenfolge bearbeiten und später wieder hierher zurückkehren.';w.append(note);
