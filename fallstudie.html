@@ -201,7 +201,8 @@ try{const d=JSON.parse(localStorage.getItem(draftKey)||localStorage.getItem('boo
  Object.assign(completedSheets,d.completedSheets||{});Object.assign(lockedAccounts,d.lockedAccounts||{});
 }}catch(e){}
 function move(next){remember();step=next;render()}
-function render(){
+function render(preserveScroll=false){
+ const previousScroll=preserveScroll?window.scrollY:0;
  el('crumb').textContent=world+' / Unternehmensbuchhaltung';
  el('eyebrow').textContent=world+' · Basisfall';
  el('title').textContent=source.title+' · '+company;
@@ -217,7 +218,8 @@ function render(){
  if(step===4)incomeStep(w);
  if(step===5)balanceStep(w);
  if(step===6)review(w);
- scrollTo(0,0);
+ if(preserveScroll)window.scrollTo(0,previousScroll);
+ else scrollTo(0,0);
 }
 function makeSection(w,heading,desc){let h=document.createElement('h2');h.textContent=heading;w.append(h);let p=document.createElement('p');p.className='muted';p.textContent=desc;w.append(p)}
 const WORLD_STORIES={"Fussball":"Beim FC Basel beginnt eine neue Saison. Rund um die Heimspiele herrscht Hochbetrieb: Fans kaufen Schals und Trikots, und für den Verkauf müssen Waren beschafft sowie Rechnungen bezahlt werden. Du übernimmst die Buchhaltung eines fiktiven kleinen Fanartikelbereichs und dokumentierst, was während der ersten Wochen finanziell passiert.","Mode":"Eine neue Kollektion steht an. Für eine fiktive Verkaufsstelle von On werden Sportschuhe bestellt, Ladenflächen eingerichtet und die ersten Verkäufe abgewickelt. Du sorgst dafür, dass die Buchhaltung auch dann den Überblick behält, wenn Bestellungen, Lieferantenrechnungen und Kundenzahlungen gleichzeitig eintreffen.","Gaming":"Vor einem grossen Gaming-Wochenende steigt die Nachfrage nach Zubehör. In einer fiktiven Digitec-Verkaufsstelle müssen Waren eingekauft, Rechnungen bezahlt und Kundengeschäfte verbucht werden. Du übernimmst die Zahlen und stellst sicher, dass aus den vielen Bewegungen eine nachvollziehbare Buchhaltung entsteht.","Gastronomie":"Ein kleines fiktives tibits-Lokal bereitet sich auf eine besonders gut besuchte Woche vor. Lebensmittel werden beschafft, der Betrieb braucht Einrichtung und am Ende des Tages zählt jeder Verkauf. Du hältst die wirtschaftlichen Vorgänge fest und findest heraus, wie sich die Geschäftstätigkeit auf die Finanzlage auswirkt.","Autos":"In einem fiktiven BMW-Showroom laufen die Vorbereitungen für eine neue Verkaufsaktion. Zubehör wird eingekauft, der Ausstellungsraum eingerichtet und Rechnungen von Geschäftspartnern treffen ein. Du übernimmst die Buchhaltung dieses vereinfachten Betriebs und behältst den Überblick über Geld, Schulden und Erträge.","Fitness":"Ein fiktiver Standort von update Fitness bereitet einen neuen Trainingsbereich vor. Für den Betrieb werden Geräte und Zubehör benötigt, laufende Kosten fallen an und Verkäufe werden abgewickelt. Deine Aufgabe ist es, sämtliche finanziellen Vorgänge sauber zu erfassen und am Ende einen Abschluss zu erstellen.","Reisen":"Die Ferienzeit steht vor der Tür und bei einer fiktiven Verkaufsstelle von SWISS ist einiges los. Neben dem Tagesgeschäft werden Arbeitsplätze ausgestattet, Rechnungen beglichen und zusätzliche Produkte verkauft. Du begleitest den vereinfachten Betrieb aus Sicht der Buchhaltung.","Beauty":"In einer fiktiven Import-Parfumerie-Filiale steht die Einführung eines neuen Sortiments an. Kosmetikprodukte werden bestellt, die Verkaufsfläche vorbereitet und erste Kundeneinkäufe abgewickelt. Du dokumentierst die finanziellen Vorgänge und erstellst daraus eine vollständige Buchhaltung.","Musik":"Das OpenAir St. Gallen rückt näher. Für einen fiktiven Merchandise-Stand werden Produkte bestellt, die Verkaufseinrichtung organisiert und während des Events Artikel verkauft. Du bist für die Buchhaltung zuständig und zeigst am Schluss, wie sich die Aktionen finanziell ausgewirkt haben."};
@@ -519,7 +521,7 @@ function runLedgerTransfers(){
  el('ledger-notice').textContent='Übernahme ausgeführt: '+(ledgerPreferences.ab?availableAB.length+' Anfangsbestände. ':'')+(ledgerPreferences.journal?availableJournal.length+' Buchungssätze.':'')+' Es werden deine Eingaben übernommen, nicht die Musterlösung.';
 }
 function ledgerStep(w){
- makeSection(w,'T-Konten führen','Eröffne die Konten und trage AB und Buchungen ein. Berechne die grössere Seitensumme, übertrage sie auf die Gegenseite und ermittle den EB. Klicke ein Zahlenfeld an für Kopieren und Einfügen.');
+ makeSection(w,'T-Konten führen','Eröffne die Konten und trage AB und Buchungen ein. Berechne die Seitensummen und ermittle den EB. Für das Kopieren und Einfügen von Beträgen kannst du die Leiste unten verwenden.');
  const settings=document.createElement('details');settings.className='ledger-settings';settings.innerHTML='<summary>Hilfen & Automatik <span class="muted">optional</span></summary><div class="ledger-settings-body">'
  +'<label class="ledger-option"><input type="checkbox" id="auto-ab" '+(ledgerPreferences.ab?'checked':'')+'> AB aus meiner Eröffnungsbilanz übernehmen</label>'
  +'<label class="ledger-option"><input type="checkbox" id="auto-journal" '+(ledgerPreferences.journal?'checked':'')+'> Buchungen aus meinem Journal übernehmen</label>'
@@ -540,7 +542,6 @@ function ledgerStep(w){
   const k=accounts.indexOf(a),data=ensureLedger(a);
   const box=document.createElement('article');box.className='account-box';
   box.innerHTML='<h3>'+escapeText(accountLabel(a))+(lockedAccounts[a]?' <span class="account-locked">✓ geprüft</span>':'')+'</h3><div class="simple-ledger">'+(lockedAccounts[a]?readonlyLedgerSide(k,'debit',data.debit)+readonlyLedgerSide(k,'credit',data.credit):ledgerSideHtml(k,'debit',data.debit)+ledgerSideHtml(k,'credit',data.credit))+'</div>'
-   +'<div class="ledger-transfer-actions"'+(ledgerPreferences.sums||lockedAccounts[a]?' hidden':'')+'><span>Summe übernehmen:</span><button type="button" data-transfer="'+k+'" data-from="debit" title="Summe Soll auf die Habenseite übertragen">Soll → Haben</button><button type="button" data-transfer="'+k+'" data-from="credit" title="Summe Haben auf die Sollseite übertragen">Haben → Soll</button></div>'
    +'<div class="account-bottom">'+(lockedAccounts[a]?'<button type="button" class="secondary" data-unlock="'+k+'">Wieder bearbeiten</button>':'<button type="button" class="secondary" data-check="'+k+'">Konto prüfen</button><button type="button" class="secondary" data-close="'+k+'">Konto entfernen</button>')+'</div>'
    +'<div class="account-status'+(accountResults[a]?(accountResults[a].ok?' good':' bad'):'')+'" id="account-result-'+k+'">'+(lockedAccounts[a]?'Richtig geprüft – dieses Konto ist abgeschlossen.':accountResults[a]?escapeText(accountResults[a].message):'Noch nicht geprüft')+'</div>';
   grid.append(box);
@@ -550,32 +551,28 @@ function ledgerStep(w){
  grid.addEventListener('input',()=>{if(ledgerPreferences.sums)updateAutomaticSums()});
  grid.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
-  const k=Number(b.dataset.add??b.dataset.del??b.dataset.transfer??b.dataset.check??b.dataset.close??b.dataset.unlock);
+  const k=Number(b.dataset.add??b.dataset.del??b.dataset.check??b.dataset.close??b.dataset.unlock);
   const a=accounts[k];if(!a)return;
   if(b.dataset.unlock!==undefined){delete lockedAccounts[a];delete accountResults[a];persistDraft();render();return}
   if(lockedAccounts[a])return;
   if(b.dataset.add!==undefined){
-   captureLedgers();ensureLedger(a)[b.dataset.side].entries.push('');delete accountResults[a];persistDraft();render();return;
+   captureLedgers();
+   const side=b.dataset.side;
+   const index=ensureLedger(a)[side].entries.length;
+   ensureLedger(a)[side].entries.push('');
+   delete accountResults[a];persistDraft();
+   render(true);
+   const tag=side==='debit'?'d':'c';
+   const newInput=el('lentry'+k+tag+index);
+   if(newInput){
+    newInput.focus({preventScroll:true});
+    // Falls die neue Zeile am unteren Bildschirmrand liegt, nur leicht nachscrollen.
+    newInput.scrollIntoView({block:'nearest',behavior:'instant'});
+   }
+   return;
   }
   if(b.dataset.del!==undefined){
-   captureLedgers();ensureLedger(a)[b.dataset.side].entries.splice(Number(b.dataset.index),1);delete accountResults[a];persistDraft();render();return;
-  }
-  if(b.dataset.transfer!==undefined){
-   const from=b.dataset.from,to=from==='debit'?'credit':'debit';
-   const fromField=el('ltotal'+k+(from==='debit'?'d':'c'));
-   const toField=el('ltotal'+k+(to==='debit'?'d':'c'));
-   const value=fromField?.value.trim()??'';
-   if(!value||!Number.isFinite(parseAmount(value))||parseAmount(value)<0){
-    const notice=el('account-result-'+k);
-    notice.textContent='Trage zuerst eine gültige Summe auf der '+(from==='debit'?'Soll':'Haben')+'seite ein.';
-    notice.className='account-status bad';
-    fromField?.focus();return;
-   }
-   toField.value=formattedAmount(value);
-   captureLedgers();persistDraft();
-   const notice=el('account-result-'+k);
-   notice.textContent='Summe '+formattedAmount(value)+' von '+(from==='debit'?'Soll':'Haben')+' nach '+(to==='debit'?'Soll':'Haben')+' übernommen. EB musst du selbst berechnen und eintragen.';
-   notice.className='account-status';return;
+   captureLedgers();ensureLedger(a)[b.dataset.side].entries.splice(Number(b.dataset.index),1);delete accountResults[a];persistDraft();render(true);return;
   }
   if(b.dataset.check!==undefined){
    captureLedgers();persistDraft();const result=checkLedger(a);accountResults[a]=result;
