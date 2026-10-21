@@ -161,6 +161,7 @@ const dropdown=()=>'<option value="">Konto wählen</option>'+accounts.map(a=>'<o
 function journalStep(w){makeSection(w,'1. Journal führen','Lies alle Geschäftsfälle und bestimme Sollkonto, Habenkonto und Betrag. Prüfe danach deine Buchungen.');let wrap=document.createElement('div');wrap.className='tablewrap';wrap.innerHTML='<table><thead><tr><th>Nr.</th><th>Geschäftsfall</th><th>Soll</th><th>Haben</th><th>CHF</th></tr></thead><tbody>'+source.transactions.map((t,i)=>'<tr><td>'+(i+1)+'</td><td style="min-width:240px">'+t.description+'</td><td><select id="s'+i+'">'+dropdown()+'</select></td><td><select id="h'+i+'">'+dropdown()+'</select></td><td><input id="a'+i+'" inputmode="decimal" placeholder="Betrag"></td></tr>').join('')+'</tbody></table>';w.append(wrap);journal.forEach((x,i)=>{if(el('s'+i)){el('s'+i).value=x.debit;el('h'+i).value=x.credit;el('a'+i).value=x.amount}});let c=controls();c.append(button('Journal prüfen',()=>{journal=source.transactions.map((t,i)=>({debit:el('s'+i).value,credit:el('h'+i).value,amount:el('a'+i).value}));const wrong=journal.map((j,i)=>j.debit===source.transactions[i].debit&&j.credit===source.transactions[i].credit&&parseAmount(j.amount)===source.transactions[i].amount?null:i+1).filter(Boolean);info(wrong.length?'Noch nicht korrekt bei Geschäftsfällen: '+wrong.join(', ')+'. Prüfe Soll, Haben und Betrag.':'Alle sieben Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!wrong.length);persistDraft()}));let next=button('Zu den T-Konten →',()=>move(3));next.id='continue';c.append(next);w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>')}
 
 
+function openingSide(a){if(!Object.prototype.hasOwnProperty.call(source.opening,a))return null;return categories[a]==='asset'?'debit':'credit'}
 function emptyLedger(){return {debit:{ab:'',entries:[],eb:''},credit:{ab:'',entries:[],eb:''}}}
 function ensureLedger(a){
  if(!ledgerAnswers[a]||Array.isArray(ledgerAnswers[a])){
@@ -173,7 +174,12 @@ function ensureLedger(a){
   });
   ledgerAnswers[a]=newOne;
  }
- return ledgerAnswers[a];
+ const record=ledgerAnswers[a];
+ const validSide=openingSide(a);
+ for(const side of ['debit','credit']){
+  if(side!==validSide)record[side].ab='';
+ }
+ return record;
 }
 function captureLedgers(){
  for(const a of openedAccounts){
@@ -217,7 +223,7 @@ function ledgerSideHtml(k,side,data){
  const totalsFor=ledgerTotals[accounts[k]]||{};
  const value=ledgerPreferences.sums?computedSideTotal(data):totalsFor[side]??'';
  return '<section class="simple-side"><div class="simple-side-title"><span>'+caption+' '+sign+'</span></div>'
-  +'<div class="simple-line special"><span>AB</span><input id="lab'+k+t+'" inputmode="decimal" placeholder="Betrag" value="'+escapeText(data.ab)+'" aria-label="'+caption+' Anfangsbestand"></div>'
+  +(openingSide(accounts[k])===side?'<div class="simple-line special"><span>AB</span><input id="lab'+k+t+'" inputmode="decimal" placeholder="Betrag" value="'+escapeText(data.ab)+'" aria-label="'+caption+' Anfangsbestand"></div>':'')
   +'<div class="simple-entries">'+data.entries.map((entry,i)=>'<div class="simple-line"><span class="entry-label">Buchung</span><input id="lentry'+k+t+i+'" inputmode="decimal" placeholder="Betrag" value="'+escapeText(entry)+'" aria-label="'+caption+' Buchung"><button type="button" title="Buchung entfernen" aria-label="Buchung entfernen" data-del="'+k+'" data-side="'+side+'" data-index="'+i+'">×</button></div>').join('')+'</div>'
   +'<button type="button" class="simple-add" data-add="'+k+'" data-side="'+side+'">+ Buchung</button>'
   +'<div class="simple-line special eb-line"><span>EB</span><input id="leb'+k+t+'" inputmode="decimal" placeholder="Betrag" value="'+escapeText(data.eb)+'" aria-label="'+caption+' Endbestand"></div>'
@@ -230,7 +236,7 @@ function checkLedger(a){
   const expectedBookings=expected.filter(r=>r.side===side&&r.origin!=='Anfang').map(r=>r.amount).sort((x,y)=>x-y);
   const actualAB=data[side].ab,actualBookings=data[side].entries;
   const gotAB=numericOrZero(actualAB);
-  if(!Number.isFinite(gotAB)||gotAB!==expectedAB)errors.push(side==='debit'?'AB Soll':'AB Haben');
+  if(openingSide(a)===side&&(!Number.isFinite(gotAB)||gotAB!==expectedAB))errors.push(side==='debit'?'AB Soll':'AB Haben');
   const actualNumbers=actualBookings.map(numericOrZero).sort((x,y)=>x-y);
   if(actualBookings.some(v=>String(v??'').trim()===''||!Number.isFinite(parseAmount(v)))||actualNumbers.length!==expectedBookings.length||actualNumbers.some((v,i)=>v!==expectedBookings[i]))errors.push('Buchungen '+(side==='debit'?'Soll':'Haben'));
   const requiredEnd=side==='debit'?Math.max(0,totals[a].credit-totals[a].debit):Math.max(0,totals[a].debit-totals[a].credit);
@@ -243,7 +249,7 @@ function checkLedger(a){
   const got=ledgerPreferences.sums?computedSideTotal(data[side]):parseAmount(sums[side]??'');
   if(!Number.isFinite(got)||(ledgerPreferences.sums===false&&String(sums[side]??'').trim()==='')||got!==requiredTotal)errors.push('Summe '+(side==='debit'?'Soll':'Haben'));
  }
- return errors.length?{ok:false,message:'Noch prüfen: '+errors.join(', ')+'.'}:{ok:true,message:'Richtig! AB, Buchungen, EB und Summen stimmen.'};
+ return errors.length?{ok:false,message:'Noch prüfen: '+errors.join(', ')+'.'}:{ok:true,message:'Richtig! Die Buchungen, allfällige Anfangsbestände, EB und Summen stimmen.'};
 }
 function runLedgerTransfers(){
  captureLedgers();
@@ -280,7 +286,7 @@ function runLedgerTransfers(){
  el('ledger-notice').textContent='Übernahme ausgeführt: '+(ledgerPreferences.ab?availableAB.length+' Anfangsbestände. ':'')+(ledgerPreferences.journal?availableJournal.length+' Buchungssätze.':'')+' Es werden deine Eingaben übernommen, nicht die Musterlösung.';
 }
 function ledgerStep(w){
- makeSection(w,'T-Konten führen','Eröffne Konten und trage AB, Buchungen sowie EB selbst auf der richtigen Seite ein. Es braucht keine Buchungsnummern.');
+ makeSection(w,'T-Konten führen','Eröffne Konten und erfasse die Buchungen sowie den Endbestand (EB). Nur Konten mit Anfangsbestand aus der Eröffnungsbilanz haben ein AB-Feld. Buchungsnummern sind nicht nötig.');
  const settings=document.createElement('details');settings.className='ledger-settings';settings.innerHTML='<summary>Hilfen & Automatik <span class="muted">optional</span></summary><div class="ledger-settings-body">'
  +'<label class="ledger-option"><input type="checkbox" id="auto-ab" '+(ledgerPreferences.ab?'checked':'')+'> AB aus meiner Eröffnungsbilanz übernehmen</label>'
  +'<label class="ledger-option"><input type="checkbox" id="auto-journal" '+(ledgerPreferences.journal?'checked':'')+'> Buchungen aus meinem Journal übernehmen</label>'
