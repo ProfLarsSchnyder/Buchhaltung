@@ -305,7 +305,7 @@ function openingStep(w){
  dynamicSheetControls(w,'op','Eröffnungsbilanz prüfen','Zu den Buchungssätzen →',2);
 }
 const dropdown=()=>'<option value="">Konto wählen</option>'+accounts.map(a=>'<option value="'+escapeText(a)+'">'+escapeText(accountLabel(a))+'</option>').join('');
-function journalStep(w){makeSection(w,'1. Journal führen','Lies alle Geschäftsfälle und bestimme Sollkonto, Habenkonto und Betrag. Prüfe danach deine Buchungen.');let wrap=document.createElement('div');wrap.className='tablewrap';wrap.innerHTML='<table><thead><tr><th>Nr.</th><th>Geschäftsfall</th><th>Soll</th><th>Haben</th><th>CHF</th></tr></thead><tbody>'+source.transactions.map((t,i)=>'<tr><td>'+(i+1)+'</td><td style="min-width:240px">'+t.description+'</td><td><select id="s'+i+'">'+dropdown()+'</select></td><td><select id="h'+i+'">'+dropdown()+'</select></td><td><div class="journal-value"><input id="a'+i+'" inputmode="decimal" placeholder="Betrag"><button type="button" class="amount-copy" data-copy-amount="a'+i+'" title="Betrag in die Zwischenablage kopieren" aria-label="Betrag kopieren">⧉ Kopieren</button></div></td></tr>').join('')+'</tbody></table>';w.append(wrap);journal.forEach((x,i)=>{if(el('s'+i)){el('s'+i).value=x.debit;el('h'+i).value=x.credit;el('a'+i).value=x.amount}});let c=controls();c.append(button('Journal prüfen',()=>{journal=source.transactions.map((t,i)=>({debit:el('s'+i).value,credit:el('h'+i).value,amount:el('a'+i).value}));const wrong=journal.map((j,i)=>j.debit===source.transactions[i].debit&&j.credit===source.transactions[i].credit&&parseAmount(j.amount)===source.transactions[i].amount?null:i+1).filter(Boolean);info(wrong.length?'Noch nicht korrekt bei Geschäftsfällen: '+wrong.join(', ')+'. Prüfe Soll, Haben und Betrag.':'Alle sieben Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!wrong.length);persistDraft()}));let next=button('Zu den T-Konten →',()=>move(3));next.id='continue';c.append(next);w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>')}
+function journalStep(w){makeSection(w,'1. Journal führen','Lies alle Geschäftsfälle und bestimme Sollkonto, Habenkonto und Betrag. Mit «Kopieren» kannst du Beträge in andere Bereiche übertragen.');let wrap=document.createElement('div');wrap.className='tablewrap';wrap.innerHTML='<table><thead><tr><th>Nr.</th><th>Geschäftsfall</th><th>Soll</th><th>Haben</th><th>CHF</th></tr></thead><tbody>'+source.transactions.map((t,i)=>'<tr><td>'+(i+1)+'</td><td style="min-width:240px">'+t.description+'</td><td><select id="s'+i+'">'+dropdown()+'</select></td><td><select id="h'+i+'">'+dropdown()+'</select></td><td><div class="journal-value"><input id="a'+i+'" inputmode="decimal" placeholder="Betrag"><button type="button" class="amount-copy" data-copy-amount="a'+i+'" title="Betrag in die Zwischenablage kopieren" aria-label="Betrag kopieren">⧉ Kopieren</button></div></td></tr>').join('')+'</tbody></table>';w.append(wrap);journal.forEach((x,i)=>{if(el('s'+i)){el('s'+i).value=x.debit;el('h'+i).value=x.credit;el('a'+i).value=x.amount}});let c=controls();c.append(button('Journal prüfen',()=>{journal=source.transactions.map((t,i)=>({debit:el('s'+i).value,credit:el('h'+i).value,amount:el('a'+i).value}));const wrong=journal.map((j,i)=>j.debit===source.transactions[i].debit&&j.credit===source.transactions[i].credit&&parseAmount(j.amount)===source.transactions[i].amount?null:i+1).filter(Boolean);info(wrong.length?'Noch nicht korrekt bei Geschäftsfällen: '+wrong.join(', ')+'. Prüfe Soll, Haben und Betrag.':'Alle sieben Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!wrong.length);persistDraft()}));let next=button('Zu den T-Konten →',()=>move(3));next.id='continue';c.append(next);w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>')}
 
 
 function openingSide(a){if(!Object.prototype.hasOwnProperty.call(source.opening,a))return null;return categories[a]==='asset'?'debit':'credit'}
@@ -433,7 +433,7 @@ function runLedgerTransfers(){
  el('ledger-notice').textContent='Übernahme ausgeführt: '+(ledgerPreferences.ab?availableAB.length+' Anfangsbestände. ':'')+(ledgerPreferences.journal?availableJournal.length+' Buchungssätze.':'')+' Es werden deine Eingaben übernommen, nicht die Musterlösung.';
 }
 function ledgerStep(w){
- makeSection(w,'T-Konten führen','Eröffne die Konten und trage AB und Buchungen ein. Berechne die grössere Seitensumme selbst, übertrage sie auf die Gegenseite und ermittle daraus den EB. Buchungsnummern sind nicht nötig.');
+ makeSection(w,'T-Konten führen','Eröffne die Konten und trage AB und Buchungen ein. Berechne die grössere Seitensumme selbst, übertrage sie auf die Gegenseite und ermittle daraus den EB. ⧉ kopiert Beträge, ↧ fügt sie ein.');
  const settings=document.createElement('details');settings.className='ledger-settings';settings.innerHTML='<summary>Hilfen & Automatik <span class="muted">optional</span></summary><div class="ledger-settings-body">'
  +'<label class="ledger-option"><input type="checkbox" id="auto-ab" '+(ledgerPreferences.ab?'checked':'')+'> AB aus meiner Eröffnungsbilanz übernehmen</label>'
  +'<label class="ledger-option"><input type="checkbox" id="auto-journal" '+(ledgerPreferences.journal?'checked':'')+'> Buchungen aus meinem Journal übernehmen</label>'
@@ -553,13 +553,13 @@ function showTransferButton(w,prefix,detail){
  el('transfer-sheet').onclick=()=>transferFinancialSheet(prefix);
 }
 function incomeStep(w){
- makeSection(w,'Erfolgsrechnung','Wähle die Aufwands- und Ertragskonten selbst. Du kannst die von dir ermittelten EB aus den T-Konten freiwillig übernehmen.');
+ makeSection(w,'Erfolgsrechnung','Wähle die Aufwands- und Ertragskonten selbst. Übernimm deine EB aus den T-Konten oder füge mit ↧ einen kopierten Betrag ein.');
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('er'));attachDynamicSheet(w,'er');
  showTransferButton(w,'er','Konten und Beträge aus deinen T-Konten übernehmen. Den Gewinn kannst du anschliessend selbst ergänzen.');
  dynamicSheetControls(w,'er','Erfolgsrechnung prüfen','Zur Schlussbilanz →',5);
 }
 function balanceStep(w){
- makeSection(w,'Schlussbilanz','Wähle die Konten selbst aus und ordne sie Aktiven oder Passiven zu. Du kannst die EB aus deinen T-Konten und den Gewinn aus deiner Erfolgsrechnung übernehmen.');
+ makeSection(w,'Schlussbilanz','Wähle die Konten selbst aus und ordne sie Aktiven oder Passiven zu. Du kannst die EB aus den T-Konten übernehmen oder einzelne kopierte Beträge mit ↧ einfügen.');
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('bs'));attachDynamicSheet(w,'bs');
  showTransferButton(w,'bs','Übernimm Konten und Beträge aus deiner Kontenführung und gegebenenfalls den Jahresgewinn aus deiner Erfolgsrechnung.');
  dynamicSheetControls(w,'bs','Schlussbilanz prüfen','Zur Auswertung →',6);
@@ -604,10 +604,13 @@ function review(w){
 }
 
 let lastCopiedAmount='';
+let amountToastTimer=null;
 function showCopyFeedback(message){
  let toast=document.getElementById('copy-feedback');
  if(!toast){toast=document.createElement('div');toast.id='copy-feedback';toast.className='copy-feedback';toast.setAttribute('role','status');document.body.appendChild(toast)}
  toast.textContent=message;toast.hidden=false;
+ if(amountToastTimer)clearTimeout(amountToastTimer);
+ amountToastTimer=setTimeout(()=>{toast.hidden=true},2800);
 }
 async function handleAmountClipboard(event){
  const copyButton=event.target.closest('[data-copy-amount]');
