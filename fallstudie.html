@@ -243,10 +243,21 @@ main{padding-bottom:70px}
 .solution-journal .solution-amount{text-align:right;font-weight:750;font-variant-numeric:tabular-nums}
 .solution-panel .simple-ledger{margin:10px 0}
 .account-solution{margin-top:12px;padding:12px}
-</style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
+
+.case-variants{margin-top:20px}
+.case-variants h3{font-size:16px;margin:12px 0 10px}
+.case-variant-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.case-variant{display:flex;flex-direction:column;gap:8px;text-decoration:none;border:1px solid #cbd8e5;background:#fff;color:#1b3653;padding:13px;border-radius:10px}
+.case-variant small{color:#657b8e;line-height:1.4}
+.case-variant span{font-size:11px;color:#147657;font-weight:800}
+.case-variant.chosen{border:2px solid #26876d;background:#edf8f3;padding:12px}
+.case-variant:hover{border-color:#26876d}
+@media(max-width:650px){.case-variant-grid{grid-template-columns:1fr}}
+</style><script src="fallstudien-data.js"></script></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
 const query=new URLSearchParams(location.search);const selected=query.get('welt');const world=Object.hasOwn(WORLD_DATA,selected)?selected:'Fussball';const company=WORLD_DATA[world][0],product=WORLD_DATA[world][1];
+const requestedCase=query.get('case')||'grundlagen';const caseId=window.BOOKIT_CASE_META?.[requestedCase]?requestedCase:'grundlagen';
 // Erweiterbares Datenmodell: jede spätere Fallstudie erhält einen eigenen Schlüssel, Anfangsbestände und Journalpositionen.
 const CASES={grundlagen:{title:'Dein erstes Geschäftsjahr',opening:{Bank:12000,Mobiliar:3000,'Eigenkapital':15000},transactions:[
 {description:'Du kaufst '+product+' für CHF 2’000 auf Rechnung. Der Einkauf wird direkt als Warenaufwand erfasst.',debit:'Warenaufwand',credit:'Verbindlichkeiten LL',amount:2000},
@@ -257,15 +268,15 @@ const CASES={grundlagen:{title:'Dein erstes Geschäftsjahr',opening:{Bank:12000,
 {description:'Du verkaufst '+product+' auf Rechnung für CHF 1’500.',debit:'Forderungen LL',credit:'Warenertrag',amount:1500},
 {description:'Die Kundschaft bezahlt die offene Rechnung von CHF 1’500 per Bank.',debit:'Bank',credit:'Forderungen LL',amount:1500}
 ]}};
-const ACCOUNT_NUMBERS={'Bank':'1020','Forderungen LL':'1100','Mobiliar':'1510','Verbindlichkeiten LL':'2000','Eigenkapital':'2800','Warenertrag':'3200','Warenaufwand':'4200','Mietaufwand':'6000','Jahresgewinn/Jahresverlust':'2979'};
+const ACCOUNT_NUMBERS={'Bank':'1020','Forderungen LL':'1100','Mobiliar':'1510','Verbindlichkeiten LL':'2000','Eigenkapital':'2800','Warenertrag':'3200','Warenaufwand':'4200','Mietaufwand':'6000','Jahresgewinn/Jahresverlust':'2979',...(caseId==='challenge'?{'Kasse':'1000','Darlehen':'2450','Abschreibungen':'6800'}:{})};
 const accountLabel=a=>(ACCOUNT_NUMBERS[a]?ACCOUNT_NUMBERS[a]+' · ':'')+a;
 const accountSort=(a,b)=>(Number(ACCOUNT_NUMBERS[a]||9999)-Number(ACCOUNT_NUMBERS[b]||9999));
 const accounts=Object.keys(ACCOUNT_NUMBERS).filter(a=>a!=='Jahresgewinn/Jahresverlust').sort(accountSort);
-const categories={Bank:'asset',Mobiliar:'asset','Forderungen LL':'asset','Verbindlichkeiten LL':'liability',Eigenkapital:'equity',Warenaufwand:'expense',Mietaufwand:'expense',Warenertrag:'revenue'};
+const categories={Bank:'asset',Mobiliar:'asset','Forderungen LL':'asset','Verbindlichkeiten LL':'liability',Eigenkapital:'equity',Warenaufwand:'expense',Mietaufwand:'expense',Warenertrag:'revenue',...(caseId==='challenge'?{Kasse:'asset',Darlehen:'liability',Abschreibungen:'expense'}:{})};
 const CASE_SCALE={Fussball:12,Mode:16,Gaming:14,Gastronomie:5,Autos:25,Fitness:10,Reisen:18,Beauty:8,Musik:15};
 const factor=CASE_SCALE[world]||1;
 const original=CASES.grundlagen;
-const source={title:original.title,opening:Object.fromEntries(Object.entries(original.opening).map(([k,v])=>[k,v*factor])),transactions:original.transactions.map(t=>({...t,amount:t.amount*factor,description:t.description.replace(/CHF\s[\d’']+/,()=>'CHF '+new Intl.NumberFormat('de-CH').format(t.amount*factor))}))};
+const source=caseId==='grundlagen'?{id:caseId,title:original.title,opening:Object.fromEntries(Object.entries(original.opening).map(([k,v])=>[k,v*factor])),transactions:original.transactions.map(t=>({...t,amount:t.amount*factor,description:t.description.replace(/CHF\s[\d’']+/,()=>'CHF '+new Intl.NumberFormat('de-CH').format(t.amount*factor))}))}:window.BOOKIT_CREATE_CASE(world,caseId,factor);
 const el=id=>document.getElementById(id);const CHF=n=>new Intl.NumberFormat('de-CH',{maximumFractionDigits:2}).format(n);const parseAmount=x=>Number(String(x).trim().replace(/[’'\s]/g,'').replace(',','.'));
 let step=0,journal=[],ledgerAnswers={},ledgerTotals={},openedAccounts=[],erAnswers={},balanceAnswers={},validations=[],openingAnswers={},storyAnswer='';let accountResults={};
 const ledgerPreferences={ab:false,journal:false,sums:false};
@@ -294,7 +305,7 @@ function remember(){
  if(step===5)readDynamicSheet('bs');
  persistDraft();
 }
-const draftKey='bookit-draft-v5-'+world;
+const draftKey='bookit-draft-v5-'+world+(caseId==='grundlagen'?'':'-'+caseId);
 function persistDraft(){try{localStorage.setItem(draftKey,JSON.stringify({journal,openedAccounts,ledgerAnswers,ledgerTotals,erAnswers,balanceAnswers,openingAnswers,ledgerPreferences,dynamicSheetRows,completedSheets,lockedAccounts,activityStats}))}catch(e){}}
 try{const d=JSON.parse(localStorage.getItem(draftKey)||localStorage.getItem('bookit-draft-v4-'+world)||'null');if(d){
  journal=d.journal||[];openedAccounts=d.openedAccounts||[];
@@ -311,7 +322,7 @@ function move(next){remember();step=next;render()}
 function render(preserveScroll=false){
  const previousScroll=preserveScroll?window.scrollY:0;
  el('crumb').textContent=world+' / Unternehmensbuchhaltung';
- el('eyebrow').textContent=world+' · Basisfall';
+ el('eyebrow').textContent=world+' · '+(window.BOOKIT_CASE_META[caseId]?.title||'Basisfall');
  el('title').textContent=source.title+' · '+company;
  el('subtitle').textContent='Alle Bereiche sind jederzeit erreichbar. Du kannst deine Eingaben auf jeder Seite separat überprüfen.';
  el('steps').innerHTML=stages.map((name,i)=>'<button type="button" data-step="'+i+'" class="step '+(i===step?'current':'')+'">'+name+'</button>').join('');
@@ -333,7 +344,10 @@ const WORLD_STORIES={"Fussball":"Beim FC Basel beginnt eine neue Saison. Rund um
 function intro(w){
  makeSection(w,'Die Geschichte: '+company,'Lies die Ausgangslage und verschaffe dir einen Überblick über das Unternehmen.');
  const box=document.createElement('div');box.className='scenario';
- box.textContent=WORLD_STORIES[world]+' Ausgangslage: Auf dem Bankkonto stehen CHF '+CHF(source.opening.Bank)+' und das Mobiliar ist CHF '+CHF(source.opening.Mobiliar)+' wert. Das Eigenkapital beträgt CHF '+CHF(source.opening.Eigenkapital)+'. Du bearbeitest sieben zusammenhängende Geschäftsfälle, führst die Konten und erstellst Erfolgsrechnung und Schlussbilanz. Die Übung erfolgt ohne MWST und mit direkter Verbuchung des Warenhandels. Alle Angaben sind fiktiv und keine tatsächlichen Geschäftsdaten von '+company;w.append(box);
+ box.textContent=(caseId==='grundlagen'?WORLD_STORIES[world]:source.story)+' Ausgangslage: '+Object.entries(source.opening).map(([account,amount])=>account+' CHF '+CHF(amount)).join(' · ')+'. Du bearbeitest '+source.transactions.length+' zusammenhängende Geschäftsfälle und erstellst eine vollständige Buchhaltung. Ohne MWST; Warenkäufe werden direkt als Warenaufwand gebucht. Alle Angaben sind fiktiv und keine tatsächlichen Geschäftsdaten von '+company+'.';w.append(box);
+ const selection=document.createElement('div');selection.className='case-variants';
+ selection.innerHTML='<h3>Wähle deine Fallstudie</h3><div class="case-variant-grid">'+Object.entries(window.BOOKIT_CASE_META).map(([id,meta])=>'<a class="case-variant '+(id===caseId?'chosen':'')+'" href="fallstudie.html?welt='+encodeURIComponent(world)+'&case='+encodeURIComponent(id)+'"><strong>'+escapeText(meta.title)+'</strong><small>'+escapeText(meta.subtitle)+'</small><span>'+escapeText(meta.level)+'</span></a>').join('')+'</div><p class="mini">Jede Fallstudie speichert deinen Fortschritt separat. Der bisherige Basisfall bleibt erhalten.</p>';
+ w.append(selection);
  const c=controls();c.append(button('Zur Eröffnungsbilanz →',()=>move(1),'secondary'));w.append(c);
 }
 
@@ -352,16 +366,17 @@ function sheetCheck(keys,values,state,total){const wrong=[];for(const k of keys)
 
 const sheetDef={
  op:{title:'Eröffnungsbilanz',left:'Aktiven',right:'Passiven',options:()=>accounts,
- expected:()=>({left:source.opening,right:{}}),required:()=>({left:{Bank:source.opening.Bank,Mobiliar:source.opening.Mobiliar},right:{Eigenkapital:source.opening.Eigenkapital}})},
+ expected:()=>({left:source.opening,right:{}}),required:()=>({left:Object.fromEntries(Object.entries(source.opening).filter(([a])=>categories[a]==='asset')),right:Object.fromEntries(Object.entries(source.opening).filter(([a])=>categories[a]!=='asset'))})},
  er:{title:'Erfolgsrechnung',left:'Aufwand',right:'Ertrag',options:(side)=>[...accounts.filter(a=>['expense','revenue'].includes(categories[a])),side==='left'?'Gewinn':'Verlust'],
- required:()=>({left:{Warenaufwand:signed('Warenaufwand'),Mietaufwand:signed('Mietaufwand'),...(profit>0?{Gewinn:profit}:profit===0?{Gewinn:0}:{})},right:{Warenertrag:-signed('Warenertrag'),...(profit<0?{Verlust:-profit}:profit===0?{Verlust:0}:{})}})},
+ required:()=>({left:{...Object.fromEntries(exp.map(a=>[a,signed(a)])),...(profit>=0?{Gewinn:profit}:{})},right:{...Object.fromEntries(rev.map(a=>[a,-signed(a)])),...(profit<0?{Verlust:-profit}:{})}})},
  bs:{title:'Schlussbilanz',left:'Aktiven',right:'Passiven',options:(side)=>[...accounts.filter(a=>['asset','liability','equity'].includes(categories[a])),...(side==='right'?['Jahresgewinn/Jahresverlust']:[])],
- required:()=>({left:{Bank:signed('Bank'),Mobiliar:signed('Mobiliar'),'Forderungen LL':signed('Forderungen LL')},right:{'Verbindlichkeiten LL':-signed('Verbindlichkeiten LL'),Eigenkapital:-signed('Eigenkapital'),'Jahresgewinn/Jahresverlust':profit}})}
+ required:()=>({left:Object.fromEntries(assets.map(a=>[a,signed(a)])),right:{...Object.fromEntries(accounts.filter(a=>['liability','equity'].includes(categories[a])).map(a=>[a,-signed(a)])),'Jahresgewinn/Jahresverlust':profit}})}
+
 };
 function sheetStoredState(prefix){return prefix==='op'?openingAnswers:prefix==='er'?erAnswers:balanceAnswers}
 function sheetsTotal(prefix){
- if(prefix==='op')return source.opening.Eigenkapital;
- if(prefix==='er')return Math.max(-signed('Warenertrag'),exp.reduce((sum,a)=>sum+signed(a),0));
+ if(prefix==='op')return Object.entries(source.opening).filter(([a])=>categories[a]==='asset').reduce((sum,[a,v])=>sum+v,0);
+ if(prefix==='er')return Math.max(rev.reduce((sum,a)=>sum-signed(a),0),exp.reduce((sum,a)=>sum+signed(a),0));
  return assets.reduce((sum,a)=>sum+signed(a),0);
 }
 function sheetSideItems(prefix,side){
@@ -617,7 +632,7 @@ function journalStep(w){
   journal=source.transactions.map((t,i)=>({debit:el('s'+i).value,credit:el('h'+i).value,amount:el('a'+i).value}));
   const mistakes=journalMistakes(true);
   recordCheck(!mistakes.length,mistakes.length);
-  info(mistakes.length?'Noch nicht korrekt: '+mistakes.join(' '):'Alle sieben Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!mistakes.length);
+  info(mistakes.length?'Noch nicht korrekt: '+mistakes.join(' '):'Alle '+source.transactions.length+' Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!mistakes.length);
   persistDraft();
  }));
  const next=button('Zu den T-Konten →',()=>move(3));next.id='continue';c.append(next);
@@ -1012,7 +1027,7 @@ function resetEntireCase(){
  Object.assign(ledgerPreferences,{ab:false,journal:false,sums:false});
  try{
   localStorage.removeItem(draftKey);
-  localStorage.removeItem('bookit-draft-v4-'+world);
+  if(caseId==='grundlagen')localStorage.removeItem('bookit-draft-v4-'+world);
   for(const key of ['bookit-cases-v1','bookit-cases-v2']){
    const saved=JSON.parse(localStorage.getItem(key)||'[]');
    if(Array.isArray(saved))localStorage.setItem(key,JSON.stringify(saved.filter(record=>!(record.world===world&&record.caseId==='grundlagen'))));
@@ -1063,7 +1078,7 @@ function review(w){
  const erValues={'Warenaufwand':signed('Warenaufwand'),'Mietaufwand':signed('Mietaufwand'),'Gewinn':profit,'Warenertrag':-signed('Warenertrag')};
  const incomeOk=checkDynamicSheet('er').length===0;
  const balanceValues={Bank:signed('Bank'),Mobiliar:signed('Mobiliar'),'Forderungen LL':signed('Forderungen LL'),'Verbindlichkeiten LL':-signed('Verbindlichkeiten LL'),'Eigenkapital inklusive Gewinn':-signed('Eigenkapital')+profit};
- const total=balanceValues.Bank+balanceValues.Mobiliar+balanceValues['Forderungen LL'];
+ const total=sheetsTotal('bs');
  const balanceOk=checkDynamicSheet('bs').length===0;
  const status=[['Eröffnungsbilanz',openingOk,1],['Buchungssätze',journalOk,2],['T-Konten',accountsOk,3],['Erfolgsrechnung',incomeOk,4],['Schlussbilanz',balanceOk,5]];
  const box=document.createElement('div');box.className='scenario';box.innerHTML=status.map(([title,ok,num])=>'<div class="resultrow" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #cfdfec"><strong>'+title+'</strong><button type="button" data-review-step="'+num+'" class="secondary" style="padding:8px 12px">'+(ok?'✓ Korrekt':'Noch bearbeiten →')+'</button></div>').join('');w.append(box);
@@ -1071,13 +1086,13 @@ function review(w){
  const completed=status.every(x=>x[1]);
  w.insertAdjacentHTML('beforeend',learnerStatisticsHTML());
  if(completed){
-  w.insertAdjacentHTML('beforeend','<div class="summary" style="margin-top:18px"><div>Jahresgewinn<strong>CHF '+CHF(profit)+'</strong></div><div>Bilanzsumme<strong>CHF '+CHF(total)+'</strong></div><div>Geschäftsfälle<strong>'+source.transactions.length+'</strong></div></div>'
-   +'<div class="story-finale"><h3>Mission erfüllt: '+escapeText(company)+'</h3><p>'+escapeText(WORLD_FINALES[world]||'Du hast die Buchhaltung dieses fiktiven Unternehmens erfolgreich abgeschlossen.')+'</p><p><strong>'+(
+  w.insertAdjacentHTML('beforeend','<div class="summary" style="margin-top:18px"><div>Jahresergebnis<strong>CHF '+CHF(profit)+'</strong></div><div>Bilanzsumme<strong>CHF '+CHF(total)+'</strong></div><div>Geschäftsfälle<strong>'+source.transactions.length+'</strong></div></div>'
+   +'<div class="story-finale"><h3>Mission erfüllt: '+escapeText(company)+'</h3><p>'+escapeText(source.epilogue||WORLD_FINALES[world]||'Du hast die Buchhaltung dieses fiktiven Unternehmens erfolgreich abgeschlossen.')+'</p><p><strong>'+(
      profit>0?'Der fiktive Betrieb schliesst mit CHF '+CHF(profit)+' Gewinn ab.':
      profit<0?'Der fiktive Betrieb schliesst mit CHF '+CHF(Math.abs(profit))+' Verlust ab.':
      'Der fiktive Betrieb schliesst mit einem ausgeglichenen Ergebnis ab.'
    )+'</strong></p></div>');
-  try{const key='bookit-cases-v2';const history=JSON.parse(localStorage.getItem(key)||'[]');if(!history.some(x=>x.world===world&&x.caseId==='grundlagen')){history.push({world,caseId:'grundlagen',at:new Date().toISOString(),profit,amount:total});localStorage.setItem(key,JSON.stringify(history))}}catch(e){}
+  try{const key='bookit-cases-v2';const history=JSON.parse(localStorage.getItem(key)||'[]');if(!history.some(x=>x.world===world&&x.caseId===caseId)){history.push({world,caseId,at:new Date().toISOString(),profit,amount:total});localStorage.setItem(key,JSON.stringify(history))}}catch(e){}
  }else{
   const note=document.createElement('p');note.className='muted';note.textContent='Einige Bereiche sind noch nicht korrekt oder unvollständig. Du kannst sie in beliebiger Reihenfolge bearbeiten und später wieder hierher zurückkehren.';w.append(note);
  }
