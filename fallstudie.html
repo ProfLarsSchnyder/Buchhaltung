@@ -244,10 +244,10 @@ const CASES={grundlagen:{title:'Dein erstes Geschäftsjahr',opening:{Bank:12000,
 {description:'Du verkaufst '+product+' auf Rechnung für CHF 1’500.',debit:'Forderungen LL',credit:'Warenertrag',amount:1500},
 {description:'Die Kundschaft bezahlt die offene Rechnung von CHF 1’500 per Bank.',debit:'Bank',credit:'Forderungen LL',amount:1500}
 ]}};
-const ACCOUNT_NUMBERS={'Bank':'1020','Forderungen LL':'1100','Mobiliar':'1510','Verbindlichkeiten LL':'2000','Eigenkapital':'2800','Warenertrag':'3200','Warenaufwand':'4200','Mietaufwand':'6000','Jahresgewinn':'2979','Jahresverlust':'2979'};
+const ACCOUNT_NUMBERS={'Bank':'1020','Forderungen LL':'1100','Mobiliar':'1510','Verbindlichkeiten LL':'2000','Eigenkapital':'2800','Warenertrag':'3200','Warenaufwand':'4200','Mietaufwand':'6000','Jahresgewinn/Jahresverlust':'2979'};
 const accountLabel=a=>(ACCOUNT_NUMBERS[a]?ACCOUNT_NUMBERS[a]+' · ':'')+a;
 const accountSort=(a,b)=>(Number(ACCOUNT_NUMBERS[a]||9999)-Number(ACCOUNT_NUMBERS[b]||9999));
-const accounts=Object.keys(ACCOUNT_NUMBERS).filter(a=>!['Jahresgewinn','Jahresverlust'].includes(a)).sort(accountSort);
+const accounts=Object.keys(ACCOUNT_NUMBERS).filter(a=>a!=='Jahresgewinn/Jahresverlust').sort(accountSort);
 const categories={Bank:'asset',Mobiliar:'asset','Forderungen LL':'asset','Verbindlichkeiten LL':'liability',Eigenkapital:'equity',Warenaufwand:'expense',Mietaufwand:'expense',Warenertrag:'revenue'};
 const CASE_SCALE={Fussball:12,Mode:16,Gaming:14,Gastronomie:5,Autos:25,Fitness:10,Reisen:18,Beauty:8,Musik:15};
 const factor=CASE_SCALE[world]||1;
@@ -288,6 +288,10 @@ try{const d=JSON.parse(localStorage.getItem(draftKey)||localStorage.getItem('boo
  ledgerAnswers=d.ledgerAnswers||{};ledgerTotals=d.ledgerTotals||{};
  erAnswers=d.erAnswers||{};balanceAnswers=d.balanceAnswers||{};openingAnswers=d.openingAnswers||{};Object.assign(ledgerPreferences,d.ledgerPreferences||{});if(d.dynamicSheetRows)for(const key of ['op','er','bs']){if(d.dynamicSheetRows[key])dynamicSheetRows[key]=d.dynamicSheetRows[key]}
  Object.assign(completedSheets,d.completedSheets||{});Object.assign(lockedAccounts,d.lockedAccounts||{});
+ // Ältere Fallstudien verwenden getrennte Bezeichnungen; Eingaben und Vorzeichen erhalten.
+ for(const side of ['left','right'])for(const row of dynamicSheetRows.bs[side]){
+  if(row.account==='Jahresgewinn'||row.account==='Jahresverlust')row.account='Jahresgewinn/Jahresverlust';
+ }
  if(d.activityStats){activityStats.checks=Number(d.activityStats.checks)||0;activityStats.failedChecks=Number(d.activityStats.failedChecks)||0;activityStats.errorNotices=Number(d.activityStats.errorNotices)||0;Object.assign(activityStats.helps,d.activityStats.helps||{})}
 }}catch(e){}
 function move(next){remember();step=next;render()}
@@ -338,8 +342,8 @@ const sheetDef={
  expected:()=>({left:source.opening,right:{}}),required:()=>({left:{Bank:source.opening.Bank,Mobiliar:source.opening.Mobiliar},right:{Eigenkapital:source.opening.Eigenkapital}})},
  er:{title:'Erfolgsrechnung',left:'Aufwand',right:'Ertrag',options:(side)=>[...accounts.filter(a=>['expense','revenue'].includes(categories[a])),side==='left'?'Gewinn':'Verlust'],
  required:()=>({left:{Warenaufwand:signed('Warenaufwand'),Mietaufwand:signed('Mietaufwand'),...(profit>0?{Gewinn:profit}:profit===0?{Gewinn:0}:{})},right:{Warenertrag:-signed('Warenertrag'),...(profit<0?{Verlust:-profit}:profit===0?{Verlust:0}:{})}})},
- bs:{title:'Schlussbilanz',left:'Aktiven',right:'Passiven',options:(side)=>[...accounts.filter(a=>['asset','liability','equity'].includes(categories[a])),...(side==='right'?['Jahresgewinn','Jahresverlust']:[])],
- required:()=>({left:{Bank:signed('Bank'),Mobiliar:signed('Mobiliar'),'Forderungen LL':signed('Forderungen LL')},right:{'Verbindlichkeiten LL':-signed('Verbindlichkeiten LL'),Eigenkapital:-signed('Eigenkapital'),...(profit>0?{Jahresgewinn:profit}:profit<0?{Jahresverlust:profit}:{Jahresgewinn:0,Jahresverlust:0})}})}
+ bs:{title:'Schlussbilanz',left:'Aktiven',right:'Passiven',options:(side)=>[...accounts.filter(a=>['asset','liability','equity'].includes(categories[a])),...(side==='right'?['Jahresgewinn/Jahresverlust']:[])],
+ required:()=>({left:{Bank:signed('Bank'),Mobiliar:signed('Mobiliar'),'Forderungen LL':signed('Forderungen LL')},right:{'Verbindlichkeiten LL':-signed('Verbindlichkeiten LL'),Eigenkapital:-signed('Eigenkapital'),{'Jahresgewinn/Jahresverlust':profit}}})}
 };
 function sheetStoredState(prefix){return prefix==='op'?openingAnswers:prefix==='er'?erAnswers:balanceAnswers}
 function sheetsTotal(prefix){
@@ -371,7 +375,7 @@ function readDynamicSheet(prefix){
  }
 }
 
-function isResultAccount(prefix,account){return (prefix==='er'&&['Gewinn','Verlust'].includes(account))||(prefix==='bs'&&['Jahresgewinn','Jahresverlust'].includes(account))}
+function isResultAccount(prefix,account){return (prefix==='er'&&['Gewinn','Verlust'].includes(account))||(prefix==='bs'&&account==='Jahresgewinn/Jahresverlust')}
 function outcomeClass(value){
  const raw=String(value??'').trim();
  if(!raw||!Number.isFinite(parseAmount(raw)))return 'result-neutral';
@@ -383,7 +387,7 @@ function resultColorClass(prefix,account,amount){
  if(!raw||!Number.isFinite(parseAmount(raw))||parseAmount(raw)===0)return 'result-neutral';
  // Ein Verlust wird auf der Ertragsseite mit einem positiven Ausgleichsbetrag gezeigt,
  // bedeutet wirtschaftlich jedoch ein negatives Jahresergebnis.
- if(account==='Verlust'||account==='Jahresverlust')return 'result-negative';
+ if(account==='Verlust')return 'result-negative';
  return outcomeClass(amount);
 }
 function refreshResultColors(prefix){
@@ -466,7 +470,7 @@ function checkDynamicSheet(prefix){
 
 const FINISHED_GROUPS={
  op:{left:[['Umlaufvermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])<1400],['Anlagevermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])>=1400]],right:[['Kurzfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])<2400],['Langfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])>=2400],['Eigenkapital',a=>categories[a]==='equity']]},
- bs:{left:[['Umlaufvermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])<1400],['Anlagevermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])>=1400]],right:[['Kurzfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])<2400],['Langfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])>=2400],['Eigenkapital',a=>categories[a]==='equity'||a==='Jahresgewinn'||a==='Jahresverlust']]},
+ bs:{left:[['Umlaufvermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])<1400],['Anlagevermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])>=1400]],right:[['Kurzfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])<2400],['Langfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])>=2400],['Eigenkapital',a=>categories[a]==='equity'||a==='Jahresgewinn/Jahresverlust']]},
  er:{left:[['Aufwandskonten',a=>categories[a]==='expense'],['Jahresergebnis',a=>a==='Gewinn']],right:[['Ertragskonten',a=>categories[a]==='revenue'],['Jahresergebnis',a=>a==='Verlust']]}
 };
 function finishedSheetHTML(prefix){
@@ -755,9 +759,9 @@ function sourceResultFromIncome(){
  const gain=dynamicSheetRows.er.left.find(row=>row.account==='Gewinn');
  const loss=dynamicSheetRows.er.right.find(row=>row.account==='Verlust');
  if(gain&&String(gain.amount??'').trim()&&Number.isFinite(parseAmount(gain.amount))&&parseAmount(gain.amount)>0)
-  return {account:'Jahresgewinn',amount:formattedAmount(gain.amount)};
+  return {account:'Jahresgewinn/Jahresverlust',amount:formattedAmount(gain.amount)};
  if(loss&&String(loss.amount??'').trim()&&Number.isFinite(parseAmount(loss.amount))&&parseAmount(loss.amount)>0)
-  return {account:'Jahresverlust',amount:formattedAmount(-parseAmount(loss.amount))};
+  return {account:'Jahresgewinn/Jahresverlust',amount:formattedAmount(-parseAmount(loss.amount))};
  return null;
 }
 function accountEntriesFromLedgers(prefix){
@@ -788,13 +792,13 @@ function transferFinancialSheet(prefix){
  const incomeResult=sourceResultFromIncome();
  const oldResult=prefix==='er'
   ?old[profit<0?'right':'left'].find(r=>r.account===(profit<0?'Verlust':'Gewinn'))
-  :old.right.find(r=>r.account===(profit<0?'Jahresverlust':'Jahresgewinn'));
+  :old.right.find(r=>r.account==='Jahresgewinn/Jahresverlust');
  if([...old.left,...old.right].some(r=>r.account||String(r.amount??'').trim())){
   if(!confirm('Die bisherigen Kontenzeilen werden aus deinen T-Konten neu übernommen. Bereits eingegebener Gewinn oder Verlust bleibt erhalten. Fortfahren?'))return;
  }
  const resultRow=prefix==='er'
   ?{account:profit<0?'Verlust':'Gewinn',amount:oldResult?.amount??''}
-  :(incomeResult||{account:profit<0?'Jahresverlust':'Jahresgewinn',amount:oldResult?.amount??''});
+  :(incomeResult||{account:'Jahresgewinn/Jahresverlust',amount:oldResult?.amount??''});
  const mapped={
   left:found.filter(x=>x.side==='left').map(({account,amount})=>({account,amount})),
   right:found.filter(x=>x.side==='right').map(({account,amount})=>({account,amount}))
@@ -848,7 +852,7 @@ function incomeStep(w){
 function balanceStep(w){
  makeSection(w,'Schlussbilanz',completedSheets.bs?'Deine korrekt geprüfte Schlussbilanz mit Umlauf- und Anlagevermögen sowie Fremd- und Eigenkapital.':'Wähle die Konten selbst aus und ordne sie Aktiven oder Passiven zu. Die Endbestände aus den T-Konten kannst du freiwillig übernehmen.');
  if(completedSheets.bs){renderFinishedSheet(w,'bs','Zur Auswertung →',6);return}
- showTransferButton(w,'bs','Übernimmt Bilanzkonten aus deinen T-Konten und den selbst berechneten Jahresgewinn bzw. Jahresverlust aus der Erfolgsrechnung.');
+ showTransferButton(w,'bs','Übernimmt Bilanzkonten aus deinen T-Konten und das selbst berechnete Jahresergebnis aus der Erfolgsrechnung. Bei manueller Eingabe ist ein Verlust mit Minus zu erfassen.');
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('bs'));attachDynamicSheet(w,'bs');
  dynamicSheetControls(w,'bs','Schlussbilanz prüfen','Zur Auswertung →',6);
 }
