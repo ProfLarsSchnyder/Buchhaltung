@@ -12,7 +12,7 @@
 <section class="page" id="difficulty"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="back-module">Module</button> / <span id="difficulty-crumb"></span></div><div class="intro"><div class="eyebrow">Dein Training</div><h1>Wähle die Schwierigkeit</h1><p id="difficulty-desc"></p></div><div id="difficulty-grid" class="difficulties"></div></section>
 <section class="page" id="practice"><div class="lesson"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="practice-back">Module</button> / <span id="practice-crumb"></span></div><div class="intro"><div class="eyebrow" id="training-category"></div><h1 id="training-title"></h1><p id="training-count"></p></div><div class="progress"><div id="progress-fill"></div></div><div class="panel"><div class="eyebrow">Geschäftsfall <span id="number"></span></div><div id="case" class="case"></div><form id="form"><div class="fields" id="fields"></div><div class="actions"><button type="submit" id="check" class="primary">Antwort prüfen</button><button type="button" id="hint" class="secondary">Hinweis</button><button type="button" id="show-solution" class="secondary">Musterlösung anzeigen</button><button type="button" id="next" class="secondary">Nächste Aufgabe →</button></div></form><div id="hint-output" class="feedback bad hidden"></div><div id="feedback" class="feedback hidden" aria-live="polite"></div><div id="training-solution" class="feedback hidden" aria-live="polite"></div></div></div></section>
 <section class="page" id="results"><div class="lesson"><div class="panel"><div class="eyebrow">Training abgeschlossen</div><h1>Geschafft!</h1><p id="result-description"></p><h1 id="result-count"></h1><div class="actions"><button class="primary" id="retry">Erneut üben</button><button class="secondary" id="result-modules">Weitere Module</button></div></div></div></section>
-<section class="page" id="progress"><div class="intro"><div class="eyebrow">Dein persönlicher Bereich</div><h1>Mein Lernfortschritt</h1><p>Hier siehst du deine Übungsversuche. In dieser Testversion bleiben deine Daten nur in deinem Browser gespeichert.</p></div><div class="stats"><div class="stat"><b id="stat-total">0</b><small>Versuche</small></div><div class="stat"><b id="stat-correct">0</b><small>Richtig</small></div><div class="stat"><b id="stat-percent">0 %</b><small>Erfolgsquote</small></div></div><div class="panel"><h2>Meine Themenwelten</h2><div id="progress-worlds"></div></div><div class="panel"><h2>Meine Unternehmensfälle</h2><p>Fallstudien bleiben getrennt gespeichert. Öffne einen Fall, um weiterzuarbeiten.</p><div id="case-progress"></div></div><div class="actions"><button class="secondary" id="reset">Testfortschritt löschen</button></div></section>
+<section class="page" id="progress"><div class="intro"><div class="eyebrow">Dein persönlicher Bereich</div><h1>Mein Lernfortschritt</h1><p>Hier siehst du deine Übungsversuche. In dieser Testversion bleiben deine Daten nur in deinem Browser gespeichert.</p></div><div class="stats"><div class="stat"><b id="stat-total">0</b><small>Versuche</small></div><div class="stat"><b id="stat-correct">0</b><small>Richtig</small></div><div class="stat"><b id="stat-percent">0 %</b><small>Erfolgsquote</small></div></div><div class="panel"><h2>Meine Themenwelten</h2><div id="progress-worlds"></div></div><div class="panel"><h2>Meine Unternehmensfälle</h2><p>Fallstudien bleiben getrennt gespeichert. Öffne einen Fall, um weiterzuarbeiten.</p><div id="case-progress"></div></div><div class="actions"><button class="secondary" id="export-progress">Lernstände sichern (JSON)</button><button class="secondary" id="import-progress-button">Sicherung importieren</button><input id="import-progress-file" type="file" accept=".json,application/json" hidden><button class="secondary" id="reset">Testfortschritt löschen</button></div></section>
 <footer>BOOKIT · Schweizer Buchhaltung · Schüleransicht · Alle Geschäftsfälle sind fiktiv.</footer></main><script>"use strict";
 const W=[
 {id:"Fussball",image:"Fussball.jpg",firm:"FC Basel",product:"Fussballtrikots",business:"Fanartikel und Tickets",emoji:"⚽"},
@@ -24,7 +24,7 @@ const W=[
 {id:"Reisen",image:"Reisen.jpg",firm:"SWISS",product:"Reisezubehör",business:"Reisebüro und Ferien"},
 {id:"Beauty",image:"Beauty.jpg",firm:"Import Parfumerie",product:"Kosmetikprodukte",business:"Kosmetik und Beauty"},
 {id:"Musik",image:"Musik.jpg",firm:"OpenAir St. Gallen",product:"Merchandise",business:"Musikveranstaltungen und Events"}];
-const M=[["konten","Kontenarten","Aktiven, Passiven, Aufwand und Ertrag erkennen"],["buchungen","Buchungssätze","Soll, Haben und Betrag selbstständig bestimmen"],["bilanz","Bilanz","Bilanzpositionen richtig einordnen"],["erfolg","Erfolgsrechnung","Erträge und Aufwendungen erkennen"],["casebook","Unternehmensbuchhaltung","Vollständiger Basisfall: Journal, Konten, Erfolgsrechnung und Schlussbilanz"],["mwst","Mehrwertsteuer","Buchungen mit Schweizer MWST, folgt später"]];
+const M=[["konten","Kontenarten","Aktiven, Passiven, Aufwand und Ertrag erkennen"],["buchungen","Buchungssätze","Soll, Haben und Betrag selbstständig bestimmen"],["bilanz","Bilanz","Bilanzpositionen richtig einordnen"],["erfolg","Erfolgsrechnung","Erträge und Aufwendungen erkennen"],["casebook","Unternehmensbuchhaltung","Drei spannende Fallstudien: Basisfall, Krisenfall und grosse Challenge"],["mwst","Mehrwertsteuer","Buchungen mit Schweizer MWST, folgt später"]];
 const D=[["einfach","Einfach","Kleine Beträge, grundlegende Konten und direkte Geschäftsfälle."],["mittel","Mittel","Grössere Beträge, mehr Konten und unterschiedliche Zahlungsarten."],["schwer","Schwer","Anspruchsvollere Kontenkombinationen und komplexere Geschäftsfälle."]];
 const A=[["Bank","Aktiv"],["Kasse","Aktiv"],["Forderungen LL","Aktiv"],["Warenvorrat","Aktiv"],["Mobiliar","Aktiv"],["Verbindlichkeiten LL","Passiv"],["Bankdarlehen","Passiv"],["Eigenkapital","Passiv"],["Warenaufwand","Aufwand"],["Mietaufwand","Aufwand"],["Warenertrag","Ertrag"],["Zinsaufwand","Aufwand"]];
 const $=id=>document.getElementById(id);let world=W[0],module="buchungen",difficulty="einfach",questions=[],position=0,session=[],answered=false,history=[];
@@ -141,5 +141,44 @@ function renderProgress(){
  }
  $("case-progress").innerHTML=cases.length?cases.join(""):'<p>Noch keine Fallstudie begonnen. Wähle zuerst eine Themenwelt aus.</p>';
 }
+
+function progressKeys(){
+ const keys=['bookit-v3','bookit-cases-v2'];
+ for(const w of W)for(const id of ['grundlagen','verlust','challenge']){
+  keys.push('bookit-draft-v5-'+w.id+(id==='grundlagen'?'':'-'+id));
+ }
+ return keys;
+}
+$("export-progress").onclick=()=>{
+ const items={};
+ for(const key of progressKeys()){const raw=localStorage.getItem(key);if(raw!==null)items[key]=raw}
+ if(!Object.keys(items).length){alert('Noch keine Lernstände gespeichert.');return}
+ const content=JSON.stringify({type:'bookit-backup',version:1,createdAt:new Date().toISOString(),items},null,2);
+ const url=URL.createObjectURL(new Blob([content],{type:'application/json'}));
+ const anchor=document.createElement('a');
+ anchor.href=url;anchor.download='bookit-lernstand-'+new Date().toISOString().slice(0,10)+'.json';
+ document.body.appendChild(anchor);anchor.click();anchor.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+$("import-progress-button").onclick=()=>$("import-progress-file").click();
+$("import-progress-file").onchange=async e=>{
+ const file=e.target.files?.[0];
+ if(!file)return;
+ try{
+  if(file.size>5*1024*1024)throw Error('Die Datei ist zu gross.');
+  const backup=JSON.parse(await file.text());
+  if(backup.type!=='bookit-backup'||backup.version!==1||!backup.items||typeof backup.items!=='object'||Array.isArray(backup.items))throw Error('Keine gültige BOOKIT-Sicherung.');
+  const keys=progressKeys();
+  const entries=Object.entries(backup.items).filter(([key,value])=>keys.includes(key)&&typeof value==='string');
+  if(!entries.length)throw Error('Die Sicherung enthält keine gültigen Lernstände.');
+  for(const [key,value] of entries)JSON.parse(value);
+  if(!confirm('Diese Sicherung enthält '+entries.length+' gespeicherte Lernstände. Bereits vorhandene Daten mit denselben Schlüsseln werden überschrieben. Importieren?'))return;
+  for(const [key,value] of entries)localStorage.setItem(key,value);
+  try{const x=JSON.parse(localStorage.getItem('bookit-v3')||'[]');history=Array.isArray(x)?x:[]}catch(e){history=[]}
+  renderProgress();alert('BOOKIT-Lernstände importiert.');
+ }catch(error){alert('Import fehlgeschlagen: '+error.message)}
+ finally{e.target.value=''}
+};
+
 $("reset").onclick=()=>{if(confirm("Alle lokalen Testergebnisse löschen?")){history=[];save();renderProgress()}};
 </script></body></html>
