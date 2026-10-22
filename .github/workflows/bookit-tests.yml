@@ -1,0 +1,23 @@
+name: BOOKIT Kontrollen
+on:
+  push:
+    paths:
+      - "fallstudie.html"
+      - "fallstudien-data.js"
+      - "tests/**"
+      - ".github/workflows/bookit-tests.yml"
+  pull_request:
+    paths:
+      - "fallstudie.html"
+      - "fallstudien-data.js"
+      - "tests/**"
+jobs:
+  accounting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bilanz, Erfolgsrechnung und Speicherung testen
+        run: node --test tests/bookit-cases.test.cjs
