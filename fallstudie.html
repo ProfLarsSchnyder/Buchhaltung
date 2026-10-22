@@ -228,6 +228,8 @@ main{padding-bottom:70px}
 .story-finale h3{margin:0 0 10px;color:#176948}
 .story-finale p{margin:8px 0;line-height:1.6}
 @media(max-width:500px){.learning-review{padding:14px}.review-metrics{gap:6px}.review-metrics>div{padding:9px 7px}.review-metrics strong{font-size:20px}.review-metrics span{font-size:11px}}
+
+.wrong-result-side select,.wrong-result-side input{border-color:#c95c5c!important;color:#ac2525!important}
 </style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
@@ -242,10 +244,10 @@ const CASES={grundlagen:{title:'Dein erstes Geschäftsjahr',opening:{Bank:12000,
 {description:'Du verkaufst '+product+' auf Rechnung für CHF 1’500.',debit:'Forderungen LL',credit:'Warenertrag',amount:1500},
 {description:'Die Kundschaft bezahlt die offene Rechnung von CHF 1’500 per Bank.',debit:'Bank',credit:'Forderungen LL',amount:1500}
 ]}};
-const ACCOUNT_NUMBERS={'Bank':'1020','Forderungen LL':'1100','Mobiliar':'1510','Verbindlichkeiten LL':'2000','Eigenkapital':'2800','Warenertrag':'3200','Warenaufwand':'4200','Mietaufwand':'6000','Jahresgewinn':'2979'};
+const ACCOUNT_NUMBERS={'Bank':'1020','Forderungen LL':'1100','Mobiliar':'1510','Verbindlichkeiten LL':'2000','Eigenkapital':'2800','Warenertrag':'3200','Warenaufwand':'4200','Mietaufwand':'6000','Jahresgewinn':'2979','Jahresverlust':'2979'};
 const accountLabel=a=>(ACCOUNT_NUMBERS[a]?ACCOUNT_NUMBERS[a]+' · ':'')+a;
 const accountSort=(a,b)=>(Number(ACCOUNT_NUMBERS[a]||9999)-Number(ACCOUNT_NUMBERS[b]||9999));
-const accounts=Object.keys(ACCOUNT_NUMBERS).filter(a=>a!=='Jahresgewinn').sort(accountSort);
+const accounts=Object.keys(ACCOUNT_NUMBERS).filter(a=>!['Jahresgewinn','Jahresverlust'].includes(a)).sort(accountSort);
 const categories={Bank:'asset',Mobiliar:'asset','Forderungen LL':'asset','Verbindlichkeiten LL':'liability',Eigenkapital:'equity',Warenaufwand:'expense',Mietaufwand:'expense',Warenertrag:'revenue'};
 const CASE_SCALE={Fussball:12,Mode:16,Gaming:14,Gastronomie:5,Autos:25,Fitness:10,Reisen:18,Beauty:8,Musik:15};
 const factor=CASE_SCALE[world]||1;
@@ -334,10 +336,10 @@ function sheetCheck(keys,values,state,total){const wrong=[];for(const k of keys)
 const sheetDef={
  op:{title:'Eröffnungsbilanz',left:'Aktiven',right:'Passiven',options:()=>accounts,
  expected:()=>({left:source.opening,right:{}}),required:()=>({left:{Bank:source.opening.Bank,Mobiliar:source.opening.Mobiliar},right:{Eigenkapital:source.opening.Eigenkapital}})},
- er:{title:'Erfolgsrechnung',left:'Aufwand',right:'Ertrag',options:()=>[...accounts.filter(a=>['expense','revenue'].includes(categories[a])),'Gewinn'],
- required:()=>({left:{Warenaufwand:signed('Warenaufwand'),Mietaufwand:signed('Mietaufwand'),Gewinn:profit},right:{Warenertrag:-signed('Warenertrag')}})},
- bs:{title:'Schlussbilanz',left:'Aktiven',right:'Passiven',options:()=>[...accounts.filter(a=>['asset','liability','equity'].includes(categories[a])),'Jahresgewinn'],
- required:()=>({left:{Bank:signed('Bank'),Mobiliar:signed('Mobiliar'),'Forderungen LL':signed('Forderungen LL')},right:{'Verbindlichkeiten LL':-signed('Verbindlichkeiten LL'),Eigenkapital:-signed('Eigenkapital'),Jahresgewinn:profit}})}
+ er:{title:'Erfolgsrechnung',left:'Aufwand',right:'Ertrag',options:(side)=>[...accounts.filter(a=>['expense','revenue'].includes(categories[a])),side==='left'?'Gewinn':'Verlust'],
+ required:()=>({left:{Warenaufwand:signed('Warenaufwand'),Mietaufwand:signed('Mietaufwand'),...(profit>0?{Gewinn:profit}:{})},right:{Warenertrag:-signed('Warenertrag'),...(profit<0?{Verlust:-profit}:{})}})},
+ bs:{title:'Schlussbilanz',left:'Aktiven',right:'Passiven',options:(side)=>[...accounts.filter(a=>['asset','liability','equity'].includes(categories[a])),...(side==='right'?['Jahresgewinn','Jahresverlust']:[])],
+ required:()=>({left:{Bank:signed('Bank'),Mobiliar:signed('Mobiliar'),'Forderungen LL':signed('Forderungen LL')},right:{'Verbindlichkeiten LL':-signed('Verbindlichkeiten LL'),Eigenkapital:-signed('Eigenkapital'),...(profit>0?{Jahresgewinn:profit}:profit<0?{Jahresverlust:profit}:{})}})}
 };
 function sheetStoredState(prefix){return prefix==='op'?openingAnswers:prefix==='er'?erAnswers:balanceAnswers}
 function sheetsTotal(prefix){
@@ -369,12 +371,20 @@ function readDynamicSheet(prefix){
  }
 }
 
-function isResultAccount(prefix,account){return (prefix==='er'&&account==='Gewinn')||(prefix==='bs'&&account==='Jahresgewinn')}
+function isResultAccount(prefix,account){return (prefix==='er'&&['Gewinn','Verlust'].includes(account))||(prefix==='bs'&&['Jahresgewinn','Jahresverlust'].includes(account))}
 function outcomeClass(value){
  const raw=String(value??'').trim();
  if(!raw||!Number.isFinite(parseAmount(raw)))return 'result-neutral';
  const n=parseAmount(raw);
  return n>0?'result-positive':n<0?'result-negative':'result-neutral';
+}
+function resultColorClass(prefix,account,amount){
+ const raw=String(amount??'').trim();
+ if(!raw||!Number.isFinite(parseAmount(raw))||parseAmount(raw)===0)return 'result-neutral';
+ // Ein Verlust wird auf der Ertragsseite mit einem positiven Ausgleichsbetrag gezeigt,
+ // bedeutet wirtschaftlich jedoch ein negatives Jahresergebnis.
+ if(account==='Verlust'||account==='Jahresverlust')return 'result-negative';
+ return outcomeClass(amount);
 }
 function refreshResultColors(prefix){
  if(prefix!=='er'&&prefix!=='bs')return;
@@ -385,17 +395,19 @@ function refreshResultColors(prefix){
    const input=el('fs-'+prefix+'-'+side+'-v'+i);
    const wrapper=select?.closest('.sheet-entry');
    if(!wrapper||!input)return;
-   wrapper.classList.remove('result-positive','result-negative','result-neutral','result-account');
+   wrapper.classList.remove('result-positive','result-negative','result-neutral','result-account','wrong-result-side');
    if(!isResultAccount(prefix,select.value))return;
-   wrapper.classList.add('result-account',outcomeClass(input.value));
+   wrapper.classList.add('result-account',resultColorClass(prefix,select.value,input.value));
+   if(prefix==='er'&&((side==='right'&&select.value==='Gewinn')||(side==='left'&&select.value==='Verlust')))wrapper.classList.add('wrong-result-side');
   });
  }
 }
 function dynamicPane(prefix,side,label,idx){
- const entries=sheetSideItems(prefix,side),choices=sheetDef[prefix].options();
+ const entries=sheetSideItems(prefix,side),choices=sheetDef[prefix].options(side);
  return '<section class="fin-side"><div class="fin-side-title">'+label+'</div><div class="fin-side-body">'
   +entries.map((row,i)=>'<div class="sheet-entry">'
     +'<select id="fs-'+prefix+'-'+side+'-a'+i+'" aria-label="'+label+' Konto auswählen"><option value="">Konto wählen</option>'
+    +(row.account&&!choices.includes(row.account)?'<option value="'+escapeText(row.account)+'" selected disabled>'+escapeText(accountLabel(row.account))+' (falsche Seite)</option>':'')
     +choices.slice().sort(accountSort).map(a=>'<option value="'+escapeText(a)+'" '+(row.account===a?'selected':'')+'>'+escapeText(accountLabel(a))+'</option>').join('')+'</select>'
     +'<input id="fs-'+prefix+'-'+side+'-v'+i+'" inputmode="decimal" value="'+escapeText(row.amount)+'" placeholder="CHF" aria-label="'+label+' Betrag">'
     +'<button type="button" data-fs-remove="'+side+'" data-idx="'+i+'" title="Zeile entfernen" aria-label="Zeile entfernen">×</button></div>').join('')
@@ -436,7 +448,9 @@ function checkDynamicSheet(prefix){
    if(!raw||!Number.isFinite(parseAmount(raw))){errors.push('Betrag bei '+name);continue}
    got.set(name,parseAmount(raw));
    if(!(name in expected[side])){
-    errors.push('Zuordnung '+name);
+    if(prefix==='er'&&name==='Gewinn'&&side==='right')errors.push('Gewinn gehört auf die Aufwandseite');
+    else if(prefix==='er'&&name==='Verlust'&&side==='left')errors.push('Verlust gehört auf die Ertragsseite');
+    else errors.push('Zuordnung '+name);
    }else if(got.get(name)!==expected[side][name])errors.push('Betrag '+name);
   }
   for(const [name,value] of Object.entries(expected[side])){
@@ -452,8 +466,8 @@ function checkDynamicSheet(prefix){
 
 const FINISHED_GROUPS={
  op:{left:[['Umlaufvermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])<1400],['Anlagevermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])>=1400]],right:[['Kurzfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])<2400],['Langfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])>=2400],['Eigenkapital',a=>categories[a]==='equity']]},
- bs:{left:[['Umlaufvermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])<1400],['Anlagevermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])>=1400]],right:[['Kurzfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])<2400],['Langfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])>=2400],['Eigenkapital',a=>categories[a]==='equity'||a==='Jahresgewinn']]},
- er:{left:[['Aufwandskonten',a=>categories[a]==='expense'],['Jahresergebnis',a=>a==='Gewinn']],right:[['Ertragskonten',a=>categories[a]==='revenue']]}
+ bs:{left:[['Umlaufvermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])<1400],['Anlagevermögen',a=>categories[a]==='asset'&&Number(ACCOUNT_NUMBERS[a])>=1400]],right:[['Kurzfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])<2400],['Langfristiges Fremdkapital',a=>categories[a]==='liability'&&Number(ACCOUNT_NUMBERS[a])>=2400],['Eigenkapital',a=>categories[a]==='equity'||a==='Jahresgewinn'||a==='Jahresverlust']]},
+ er:{left:[['Aufwandskonten',a=>categories[a]==='expense'],['Jahresergebnis',a=>a==='Gewinn']],right:[['Ertragskonten',a=>categories[a]==='revenue'],['Jahresergebnis',a=>a==='Verlust']]}
 };
 function finishedSheetHTML(prefix){
  const cfg=sheetDef[prefix],groups=FINISHED_GROUPS[prefix],saved=dynamicSheetRows[prefix],totalState=sheetStoredState(prefix);
@@ -463,7 +477,7 @@ function finishedSheetHTML(prefix){
    +groups[side].map(([heading,belongs])=>{
     const matches=rows.filter(r=>belongs(r.account));
     return '<div class="finished-group"><div class="finished-group-heading">'+heading+'</div>'
-      +(matches.length?matches.map(r=>'<div class="finished-row'+(isResultAccount(prefix,r.account)?' result-account '+outcomeClass(r.amount):'')+'"><span>'+escapeText(accountLabel(r.account))+'</span><strong>'+escapeText(formattedAmount(r.amount))+'</strong></div>').join(''):'<div class="finished-empty">–</div>')+'</div>';
+      +(matches.length?matches.map(r=>'<div class="finished-row'+(isResultAccount(prefix,r.account)?' result-account '+resultColorClass(prefix,r.account,r.amount):'')+'"><span>'+escapeText(accountLabel(r.account))+'</span><strong>'+escapeText(formattedAmount(r.amount))+'</strong></div>').join(''):'<div class="finished-empty">–</div>')+'</div>';
    }).join('')
    +'</div><div class="fin-total"><strong>Total '+label+'</strong><span class="finished-total">'+escapeText(formattedAmount(totalState['total'+idx]))+'</span></div></section>';
  }
