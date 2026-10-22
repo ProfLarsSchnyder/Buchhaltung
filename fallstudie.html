@@ -240,6 +240,9 @@ main{padding-bottom:70px}
 .solution-panel .fin-head{padding:12px;font-size:17px}
 .solution-panel .fin-side-body{min-height:0}
 .solution-toggle{border-color:#a5bbd2;color:#245173}
+.solution-journal .solution-amount{text-align:right;font-weight:750;font-variant-numeric:tabular-nums}
+.solution-panel .simple-ledger{margin:10px 0}
+.account-solution{margin-top:12px;padding:12px}
 </style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
@@ -578,8 +581,49 @@ function openingStep(w){
  dynamicSheetControls(w,'op','Eröffnungsbilanz prüfen','Zu den Buchungssätzen →',2);
 }
 const dropdown=()=>'<option value="">Konto wählen</option>'+accounts.map(a=>'<option value="'+escapeText(a)+'">'+escapeText(accountLabel(a))+'</option>').join('');
-function journalStep(w){makeSection(w,'1. Journal führen','Lies alle Geschäftsfälle und bestimme Sollkonto, Habenkonto und Betrag. Klicke ein Betragsfeld an, um die Zahl zu kopieren oder einzufügen.');let wrap=document.createElement('div');wrap.className='tablewrap';wrap.innerHTML='<table><thead><tr><th>Nr.</th><th>Geschäftsfall</th><th>Soll</th><th>Haben</th><th>CHF</th></tr></thead><tbody>'+source.transactions.map((t,i)=>'<tr><td>'+(i+1)+'</td><td style="min-width:240px">'+t.description+'</td><td><select id="s'+i+'">'+dropdown()+'</select></td><td><select id="h'+i+'">'+dropdown()+'</select></td><td><input id="a'+i+'" inputmode="decimal" placeholder="Betrag" title="Anklicken zum Kopieren oder Einfügen"></td></tr>').join('')+'</tbody></table>';w.append(wrap);journal.forEach((x,i)=>{if(el('s'+i)){el('s'+i).value=x.debit;el('h'+i).value=x.credit;el('a'+i).value=x.amount}});let c=controls();c.append(button('Journal prüfen',()=>{journal=source.transactions.map((t,i)=>({debit:el('s'+i).value,credit:el('h'+i).value,amount:el('a'+i).value}));const wrong=journal.map((j,i)=>j.debit===source.transactions[i].debit&&j.credit===source.transactions[i].credit&&parseAmount(j.amount)===source.transactions[i].amount?null:i+1).filter(Boolean);recordCheck(!wrong.length,wrong.length);info(wrong.length?'Noch nicht korrekt bei Geschäftsfällen: '+wrong.join(', ')+'. Prüfe Soll, Haben und Betrag.':'Alle sieben Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!wrong.length);persistDraft()}));let next=button('Zu den T-Konten →',()=>move(3));next.id='continue';c.append(next);w.append(c);w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>')}
 
+function journalMistakes(markFields=false){
+ const messages=[];
+ if(markFields){
+  for(let i=0;i<source.transactions.length;i++)
+   for(const stem of ['s','h','a'])el(stem+i)?.classList.remove('field-error');
+ }
+ source.transactions.forEach((expected,i)=>{
+  const j=journal[i]||{},wrong=[];
+  if(j.debit!==expected.debit){wrong.push('Sollkonto');if(markFields)el('s'+i)?.classList.add('field-error')}
+  if(j.credit!==expected.credit){wrong.push('Habenkonto');if(markFields)el('h'+i)?.classList.add('field-error')}
+  if(String(j.amount??'').trim()===''||!Number.isFinite(parseAmount(j.amount))||parseAmount(j.amount)!==expected.amount){
+   wrong.push('Betrag');if(markFields)el('a'+i)?.classList.add('field-error');
+  }
+  if(wrong.length)messages.push('Geschäftsfall '+(i+1)+': '+wrong.join(', ')+' prüfen.');
+ });
+ return messages;
+}
+function journalSolutionHTML(){
+ return '<h3>Musterlösung · Buchungssätze</h3><p class="mini">Zur Kontrolle – deine eigenen Eingaben bleiben erhalten.</p>'
+ +'<div class="tablewrap"><table class="solution-journal"><thead><tr><th>Nr.</th><th>Sollkonto</th><th>Habenkonto</th><th>Betrag (CHF)</th></tr></thead>'
+ +'<tbody>'+source.transactions.map((t,i)=>'<tr><td>'+(i+1)+'</td><td>'+escapeText(accountLabel(t.debit))+'</td><td>'+escapeText(accountLabel(t.credit))+'</td><td class="solution-amount">'+escapeText(formattedAmount(t.amount))+'</td></tr>').join('')+'</tbody></table></div>';
+}
+function journalStep(w){
+ makeSection(w,'1. Journal führen','Lies alle Geschäftsfälle und bestimme Sollkonto, Habenkonto und Betrag. Klicke ein Betragsfeld an, um die Zahl zu kopieren oder einzufügen.');
+ let wrap=document.createElement('div');wrap.className='tablewrap';
+ wrap.innerHTML='<table><thead><tr><th>Nr.</th><th>Geschäftsfall</th><th>Soll</th><th>Haben</th><th>CHF</th></tr></thead><tbody>'
+ +source.transactions.map((t,i)=>'<tr><td>'+(i+1)+'</td><td style="min-width:240px">'+t.description+'</td><td><select id="s'+i+'">'+dropdown()+'</select></td><td><select id="h'+i+'">'+dropdown()+'</select></td><td><input id="a'+i+'" inputmode="decimal" placeholder="Betrag" title="Anklicken zum Kopieren oder Einfügen"></td></tr>').join('')
+ +'</tbody></table>';w.append(wrap);
+ journal.forEach((x,i)=>{if(el('s'+i)){el('s'+i).value=x.debit;el('h'+i).value=x.credit;el('a'+i).value=x.amount}});
+ const c=controls();
+ c.append(button('Journal prüfen',()=>{
+  journal=source.transactions.map((t,i)=>({debit:el('s'+i).value,credit:el('h'+i).value,amount:el('a'+i).value}));
+  const mistakes=journalMistakes(true);
+  recordCheck(!mistakes.length,mistakes.length);
+  info(mistakes.length?'Noch nicht korrekt: '+mistakes.join(' '):'Alle sieben Buchungssätze sind korrekt. Jetzt kannst du die Konten selbst führen.',!mistakes.length);
+  persistDraft();
+ }));
+ const next=button('Zu den T-Konten →',()=>move(3));next.id='continue';c.append(next);
+ w.append(c);
+ addSolutionReveal(c,w,journalSolutionHTML);
+ w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>');
+}
 
 function openingSide(a){if(!Object.prototype.hasOwnProperty.call(source.opening,a))return null;return categories[a]==='asset'?'debit':'credit'}
 function emptyLedger(){return {debit:{ab:'',entries:[],eb:''},credit:{ab:'',entries:[],eb:''}}}
@@ -649,10 +693,10 @@ function ledgerSideHtml(k,side,data){
   +'<div class="simple-line special eb-line"><span>EB</span><input id="leb'+k+t+'" inputmode="decimal" placeholder="Betrag" value="'+escapeText(data.eb)+'" aria-label="'+caption+' Endbestand"></div>'
   +'<div class="simple-line total-line"><strong>Summe</strong><input id="ltotal'+k+t+'" inputmode="decimal" placeholder="CHF" value="'+escapeText(value)+'" '+(ledgerPreferences.sums?'readonly title="Wird aus deinen Einträgen berechnet"':'')+' aria-label="'+caption+' Summe"></div></section>';
 }
-function readonlyLedgerSide(k,side,data){
+function readonlyLedgerSide(k,side,data,correctTotal=null){
  const account=accounts[k],caption=side==='debit'?'Soll':'Haben',type=categories[account];
  const sign=(side==='debit'?(type==='asset'||type==='expense'):(type==='liability'||type==='equity'||type==='revenue'))?'+':'−';
- const total=ledgerPreferences.sums?computedSideTotal(data):ledgerTotals[account]?.[side]??'';
+ const total=correctTotal!==null?correctTotal:(ledgerPreferences.sums?computedSideTotal(data):ledgerTotals[account]?.[side]??'');
  const valueHTML=value=>{
   if(String(value??'').trim()==='')return '<span class="ledger-static-blank"></span>';
   return '<button type="button" class="ledger-static-number" data-copy-value="'+escapeText(String(value))+'" title="Betrag auswählen">'+escapeText(formattedAmount(value))+'</button>';
@@ -684,7 +728,7 @@ function checkLedger(a){
   const got=ledgerPreferences.sums?computedSideTotal(data[side]):parseAmount(sums[side]??'');
   if(!Number.isFinite(got)||(ledgerPreferences.sums===false&&String(sums[side]??'').trim()==='')||got!==requiredTotal)errors.push('Summe '+(side==='debit'?'Soll':'Haben'));
  }
- return errors.length?{ok:false,errors,message:'Noch prüfen: '+errors.join(', ')+'.'}:{ok:true,errors:[],message:'Richtig! Die Buchungen, allfällige Anfangsbestände, EB und Summen stimmen.'};
+ return errors.length?{ok:false,errors,message:'Prüfe folgende Bereiche: '+errors.map(x=>x.replace(/^AB /,'Anfangsbestand (AB) – ').replace(/^EB /,'Endbestand (EB) – ').replace(/^Buchungen /,'Buchungen – ').replace(/^Summe /,'Seitensumme – ')).join('; ')+'.'}:{ok:true,errors:[],message:'Richtig! Die Buchungen, allfällige Anfangsbestände, EB und Summen stimmen.'};
 }
 function runLedgerTransfers(){
  captureLedgers();
@@ -732,6 +776,34 @@ function rerenderAtLedgerAction(index,action){
  if(typeof requestAnimationFrame==='function')requestAnimationFrame(scrollToAction);
  else scrollToAction();
 }
+
+function accountSolutionHTML(a){
+ const k=accounts.indexOf(a),data=emptyLedger();
+ for(const item of rows().filter(r=>r.account===a)){
+  if(item.origin==='Anfang')data[item.side].ab=formattedAmount(item.amount);
+  else data[item.side].entries.push(formattedAmount(item.amount));
+ }
+ const debitTotal=totals[a].debit,creditTotal=totals[a].credit;
+ if(debitTotal>creditTotal)data.credit.eb=formattedAmount(debitTotal-creditTotal);
+ else if(creditTotal>debitTotal)data.debit.eb=formattedAmount(creditTotal-debitTotal);
+ const sideTotal=Math.max(debitTotal,creditTotal);
+ return '<h3>Musterlösung · '+escapeText(accountLabel(a))+'</h3>'
+  +'<p class="mini">Zur Kontrolle – deine eigenen Eingaben bleiben unverändert.</p>'
+  +'<div class="simple-ledger">'+readonlyLedgerSide(k,'debit',data,sideTotal)+readonlyLedgerSide(k,'credit',data,sideTotal)+'</div>';
+}
+function markLedgerErrors(k,errors){
+ const card=el('account-result-'+k)?.closest('.account-box');
+ card?.querySelectorAll('.field-error').forEach(node=>node.classList.remove('field-error'));
+ for(const error of errors){
+  const side=error.endsWith('Soll')?'d':'c';
+  if(error.startsWith('AB '))el('lab'+k+side)?.classList.add('field-error');
+  if(error.startsWith('EB '))el('leb'+k+side)?.classList.add('field-error');
+  if(error.startsWith('Summe '))el('ltotal'+k+side)?.classList.add('field-error');
+  if(error.startsWith('Buchungen ')){
+   card?.querySelectorAll('[id^="lentry'+k+side+'"]').forEach(node=>node.classList.add('field-error'));
+  }
+ }
+}
 function ledgerStep(w){
  makeSection(w,'T-Konten führen','Eröffne die Konten und trage AB und Buchungen ein. Berechne die Seitensummen und ermittle den EB. Beim Anklicken eines Zahlenfelds erscheinen Kopieren und Einfügen; bei Summenfeldern zusätzlich «Summe berechnen».');
  const settings=document.createElement('details');settings.className='ledger-settings';settings.innerHTML='<summary>Hilfen & Automatik <span class="muted">optional</span></summary><div class="ledger-settings-body">'
@@ -754,8 +826,9 @@ function ledgerStep(w){
   const k=accounts.indexOf(a),data=ensureLedger(a);
   const box=document.createElement('article');box.className='account-box';
   box.innerHTML='<h3>'+escapeText(accountLabel(a))+(lockedAccounts[a]?' <span class="account-locked">✓ geprüft</span>':'')+'</h3><div class="simple-ledger">'+(lockedAccounts[a]?readonlyLedgerSide(k,'debit',data.debit)+readonlyLedgerSide(k,'credit',data.credit):ledgerSideHtml(k,'debit',data.debit)+ledgerSideHtml(k,'credit',data.credit))+'</div>'
-   +'<div class="account-bottom">'+(lockedAccounts[a]?'<button type="button" class="secondary" data-unlock="'+k+'">Wieder bearbeiten</button>':'<button type="button" class="secondary" data-check="'+k+'">Konto prüfen</button><button type="button" class="secondary" data-close="'+k+'">Konto entfernen</button>')+'</div>'
-   +'<div class="account-status'+(accountResults[a]?(accountResults[a].ok?' good':' bad'):'')+'" id="account-result-'+k+'">'+(lockedAccounts[a]?'Richtig geprüft – dieses Konto ist abgeschlossen.':accountResults[a]?escapeText(accountResults[a].message):'Noch nicht geprüft')+'</div>';
+   +'<div class="account-bottom">'+(lockedAccounts[a]?'<button type="button" class="secondary" data-unlock="'+k+'">Wieder bearbeiten</button>':'<button type="button" class="secondary" data-check="'+k+'">Konto prüfen</button><button type="button" class="secondary solution-toggle" data-solution="'+k+'">Musterlösung anzeigen</button><button type="button" class="secondary" data-close="'+k+'">Konto entfernen</button>')+'</div>'
+   +'<div class="account-status'+(accountResults[a]?(accountResults[a].ok?' good':' bad'):'')+'" id="account-result-'+k+'">'+(lockedAccounts[a]?'Richtig geprüft – dieses Konto ist abgeschlossen.':accountResults[a]?escapeText(accountResults[a].message):'Noch nicht geprüft')+'</div>'
+   +'<div class="solution-panel account-solution" id="account-solution-'+k+'" hidden></div>';
   grid.append(box);
  }
  w.append(grid);
@@ -763,10 +836,18 @@ function ledgerStep(w){
  grid.addEventListener('input',()=>{if(ledgerPreferences.sums)updateAutomaticSums()});
  grid.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
-  const k=Number(b.dataset.add??b.dataset.del??b.dataset.check??b.dataset.close??b.dataset.unlock);
+  const k=Number(b.dataset.add??b.dataset.del??b.dataset.check??b.dataset.close??b.dataset.unlock??b.dataset.solution);
   const a=accounts[k];if(!a)return;
   if(b.dataset.unlock!==undefined){delete lockedAccounts[a];delete accountResults[a];persistDraft();rerenderAtLedgerAction(k,'check');return}
   if(lockedAccounts[a])return;
+  if(b.dataset.solution!==undefined){
+   const panel=el('account-solution-'+k);if(!panel)return;
+   const show=panel.hidden;
+   if(show){panel.innerHTML=accountSolutionHTML(a);recordHelp('solution')}
+   panel.hidden=!show;
+   b.textContent=show?'Musterlösung ausblenden':'Musterlösung anzeigen';
+   return;
+  }
   if(b.dataset.add!==undefined){
    captureLedgers();
    const side=b.dataset.side;
@@ -790,7 +871,7 @@ function ledgerStep(w){
    captureLedgers();persistDraft();const result=checkLedger(a);accountResults[a]=result;
    recordCheck(result.ok,result.errors.length);
    if(result.ok){lockedAccounts[a]=true;persistDraft();rerenderAtLedgerAction(k,'unlock');return}
-   const display=el('account-result-'+k);display.textContent=result.message;display.className='account-status '+(result.ok?'good':'bad');return;
+   const display=el('account-result-'+k);display.textContent=result.message;display.className='account-status '+(result.ok?'good':'bad');markLedgerErrors(k,result.errors);return;
   }
   if(b.dataset.close!==undefined){
    captureLedgers();openedAccounts=openedAccounts.filter(name=>name!==a);delete ledgerAnswers[a];delete ledgerTotals[a];delete accountResults[a];persistDraft();render();
@@ -803,7 +884,8 @@ function ledgerStep(w){
    const result=openedAccounts.includes(a)?checkLedger(a):{ok:false,message:'Noch nicht eröffnet.'};
    accountResults[a]=result;if(!result.ok){wrong.push(a);totalIssues+=result.errors?.length||1}
    if(result.ok&&!lockedAccounts[a]){lockedAccounts[a]=true;newlyLocked=true}
-   const display=el('account-result-'+accounts.indexOf(a));if(display){display.textContent=result.message;display.className='account-status '+(result.ok?'good':'bad')}
+   const index=accounts.indexOf(a);
+   const display=el('account-result-'+index);if(display){display.textContent=result.message;display.className='account-status '+(result.ok?'good':'bad');if(!result.ok)markLedgerErrors(index,result.errors||[])}
   }
   recordCheck(!wrong.length,totalIssues);
   persistDraft();if(newlyLocked)render(true);
