@@ -343,7 +343,7 @@ const sheetDef={
  er:{title:'Erfolgsrechnung',left:'Aufwand',right:'Ertrag',options:(side)=>[...accounts.filter(a=>['expense','revenue'].includes(categories[a])),side==='left'?'Gewinn':'Verlust'],
  required:()=>({left:{Warenaufwand:signed('Warenaufwand'),Mietaufwand:signed('Mietaufwand'),...(profit>0?{Gewinn:profit}:profit===0?{Gewinn:0}:{})},right:{Warenertrag:-signed('Warenertrag'),...(profit<0?{Verlust:-profit}:profit===0?{Verlust:0}:{})}})},
  bs:{title:'Schlussbilanz',left:'Aktiven',right:'Passiven',options:(side)=>[...accounts.filter(a=>['asset','liability','equity'].includes(categories[a])),...(side==='right'?['Jahresgewinn/Jahresverlust']:[])],
- required:()=>({left:{Bank:signed('Bank'),Mobiliar:signed('Mobiliar'),'Forderungen LL':signed('Forderungen LL')},right:{'Verbindlichkeiten LL':-signed('Verbindlichkeiten LL'),Eigenkapital:-signed('Eigenkapital'),{'Jahresgewinn/Jahresverlust':profit}}})}
+ required:()=>({left:{Bank:signed('Bank'),Mobiliar:signed('Mobiliar'),'Forderungen LL':signed('Forderungen LL')},right:{'Verbindlichkeiten LL':-signed('Verbindlichkeiten LL'),Eigenkapital:-signed('Eigenkapital'),'Jahresgewinn/Jahresverlust':profit}})}
 };
 function sheetStoredState(prefix){return prefix==='op'?openingAnswers:prefix==='er'?erAnswers:balanceAnswers}
 function sheetsTotal(prefix){
