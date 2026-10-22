@@ -477,8 +477,8 @@ function checkDynamicSheet(prefix,markFields=false){
    }
    got.set(name,parseAmount(raw));
    if(!(name in expected[side])){
-    if(prefix==='er'&&name==='Gewinn'&&side==='right')errors.push(position+': Gewinn gehört auf die Aufwandseite.');
-    else if(prefix==='er'&&name==='Verlust'&&side==='left')errors.push(position+': Verlust gehört auf die Ertragsseite.');
+    if(prefix==='er'&&name==='Gewinn'&&side==='right')errors.push(position+': Jahresergebnis «Gewinn» ist auf dieser Seite falsch zugeordnet.');
+    else if(prefix==='er'&&name==='Verlust'&&side==='left')errors.push(position+': Jahresergebnis «Verlust» ist auf dieser Seite falsch zugeordnet.');
     else errors.push(position+': Konto '+accountLabel(name)+' und Seitenzuordnung prüfen.');
     mark(accountID);
    }else if(got.get(name)!==expected[side][name]){
