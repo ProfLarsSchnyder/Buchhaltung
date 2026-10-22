@@ -337,14 +337,14 @@ const sheetDef={
  op:{title:'Eröffnungsbilanz',left:'Aktiven',right:'Passiven',options:()=>accounts,
  expected:()=>({left:source.opening,right:{}}),required:()=>({left:{Bank:source.opening.Bank,Mobiliar:source.opening.Mobiliar},right:{Eigenkapital:source.opening.Eigenkapital}})},
  er:{title:'Erfolgsrechnung',left:'Aufwand',right:'Ertrag',options:(side)=>[...accounts.filter(a=>['expense','revenue'].includes(categories[a])),side==='left'?'Gewinn':'Verlust'],
- required:()=>({left:{Warenaufwand:signed('Warenaufwand'),Mietaufwand:signed('Mietaufwand'),...(profit>0?{Gewinn:profit}:{})},right:{Warenertrag:-signed('Warenertrag'),...(profit<0?{Verlust:-profit}:{})}})},
+ required:()=>({left:{Warenaufwand:signed('Warenaufwand'),Mietaufwand:signed('Mietaufwand'),...(profit>0?{Gewinn:profit}:profit===0?{Gewinn:0}:{})},right:{Warenertrag:-signed('Warenertrag'),...(profit<0?{Verlust:-profit}:profit===0?{Verlust:0}:{})}})},
  bs:{title:'Schlussbilanz',left:'Aktiven',right:'Passiven',options:(side)=>[...accounts.filter(a=>['asset','liability','equity'].includes(categories[a])),...(side==='right'?['Jahresgewinn','Jahresverlust']:[])],
- required:()=>({left:{Bank:signed('Bank'),Mobiliar:signed('Mobiliar'),'Forderungen LL':signed('Forderungen LL')},right:{'Verbindlichkeiten LL':-signed('Verbindlichkeiten LL'),Eigenkapital:-signed('Eigenkapital'),...(profit>0?{Jahresgewinn:profit}:profit<0?{Jahresverlust:profit}:{})}})}
+ required:()=>({left:{Bank:signed('Bank'),Mobiliar:signed('Mobiliar'),'Forderungen LL':signed('Forderungen LL')},right:{'Verbindlichkeiten LL':-signed('Verbindlichkeiten LL'),Eigenkapital:-signed('Eigenkapital'),...(profit>0?{Jahresgewinn:profit}:profit<0?{Jahresverlust:profit}:{Jahresgewinn:0,Jahresverlust:0})}})}
 };
 function sheetStoredState(prefix){return prefix==='op'?openingAnswers:prefix==='er'?erAnswers:balanceAnswers}
 function sheetsTotal(prefix){
  if(prefix==='op')return source.opening.Eigenkapital;
- if(prefix==='er')return -signed('Warenertrag');
+ if(prefix==='er')return Math.max(-signed('Warenertrag'),exp.reduce((sum,a)=>sum+signed(a),0));
  return assets.reduce((sum,a)=>sum+signed(a),0);
 }
 function sheetSideItems(prefix,side){
@@ -786,7 +786,9 @@ function transferFinancialSheet(prefix){
  }
  const old=dynamicSheetRows[prefix];
  const incomeResult=sourceResultFromIncome();
- const oldResult=old.left.concat(old.right).find(r=>['Gewinn','Verlust','Jahresgewinn','Jahresverlust'].includes(r.account));
+ const oldResult=prefix==='er'
+  ?old[profit<0?'right':'left'].find(r=>r.account===(profit<0?'Verlust':'Gewinn'))
+  :old.right.find(r=>r.account===(profit<0?'Jahresverlust':'Jahresgewinn'));
  if([...old.left,...old.right].some(r=>r.account||String(r.amount??'').trim())){
   if(!confirm('Die bisherigen Kontenzeilen werden aus deinen T-Konten neu übernommen. Bereits eingegebener Gewinn oder Verlust bleibt erhalten. Fortfahren?'))return;
  }
