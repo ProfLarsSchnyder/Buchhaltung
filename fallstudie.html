@@ -752,10 +752,13 @@ function ledgerEnd(a){
 }
 
 function sourceResultFromIncome(){
- const line=dynamicSheetRows.er.left.concat(dynamicSheetRows.er.right).find(row=>row.account==='Gewinn');
- if(!line)return '';
- const raw=String(line.amount??'').trim();
- return raw&&Number.isFinite(parseAmount(raw))?formattedAmount(raw):'';
+ const gain=dynamicSheetRows.er.left.find(row=>row.account==='Gewinn');
+ const loss=dynamicSheetRows.er.right.find(row=>row.account==='Verlust');
+ if(gain&&String(gain.amount??'').trim()&&Number.isFinite(parseAmount(gain.amount))&&parseAmount(gain.amount)>0)
+  return {account:'Jahresgewinn',amount:formattedAmount(gain.amount)};
+ if(loss&&String(loss.amount??'').trim()&&Number.isFinite(parseAmount(loss.amount))&&parseAmount(loss.amount)>0)
+  return {account:'Jahresverlust',amount:formattedAmount(-parseAmount(loss.amount))};
+ return null;
 }
 function accountEntriesFromLedgers(prefix){
  const applicable=accounts.filter(a=>prefix==='er'
@@ -782,38 +785,34 @@ function transferFinancialSheet(prefix){
   return;
  }
  const old=dynamicSheetRows[prefix];
- const oldResult=prefix==='er'
-  ?old.left.concat(old.right).find(r=>r.account==='Gewinn')?.amount??''
-  :old.left.concat(old.right).find(r=>r.account==='Jahresgewinn')?.amount??'';
+ const incomeResult=sourceResultFromIncome();
+ const oldResult=old.left.concat(old.right).find(r=>['Gewinn','Verlust','Jahresgewinn','Jahresverlust'].includes(r.account));
  if([...old.left,...old.right].some(r=>r.account||String(r.amount??'').trim())){
   if(!confirm('Die bisherigen Kontenzeilen werden aus deinen T-Konten neu übernommen. Bereits eingegebener Gewinn oder Verlust bleibt erhalten. Fortfahren?'))return;
  }
- // Auch bei automatischer Übernahme bleibt die Ergebniszeile bewusst leer,
- // solange die Lernenden den Gewinn nicht selbst berechnet haben.
  const resultRow=prefix==='er'
-  ?{account:'Gewinn',amount:oldResult}
-  :{account:'Jahresgewinn',amount:sourceResultFromIncome()||oldResult};
+  ?{account:profit<0?'Verlust':'Gewinn',amount:oldResult?.amount??''}
+  :(incomeResult||{account:profit<0?'Jahresverlust':'Jahresgewinn',amount:oldResult?.amount??''});
  const mapped={
   left:found.filter(x=>x.side==='left').map(({account,amount})=>({account,amount})),
   right:found.filter(x=>x.side==='right').map(({account,amount})=>({account,amount}))
  };
- if(prefix==='er')mapped.left.push(resultRow);
+ if(prefix==='er')mapped[profit<0?'right':'left'].push(resultRow);
  else mapped.right.push(resultRow);
  mapped.left.sort((a,b)=>accountSort(a.account,b.account));
  mapped.right.sort((a,b)=>accountSort(a.account,b.account));
  dynamicSheetRows[prefix]=mapped;
  recordHelp(prefix==='er'?'income':'balance');
- // Summen werden nur aus den selbst erfassten, übertragenen Zahlen berechnet,
- // nicht aus den Sollwerten der Fallstudie.
+ // Beträge stammen aus den eigenen T-Konten; das Ergebnis wird nicht errechnet.
  const state=sheetStoredState(prefix);
  const sumSide=side=>mapped[side].reduce((sum,row)=>{
   const n=parseAmount(row.amount);
   return String(row.amount??'').trim()&&Number.isFinite(n)?sum+n:sum;
  },0);
  if(prefix==='er'){
-  const revenue=sumSide('right');
-  state.total0=formattedAmount(revenue);
-  state.total1=formattedAmount(revenue);
+  const correctSide=profit<0?'left':'right';
+  state.total0=formattedAmount(sumSide(correctSide));
+  state.total1=formattedAmount(sumSide(correctSide));
  }else{
   const assetsTotal=sumSide('left');
   state.total0=formattedAmount(assetsTotal);
@@ -824,10 +823,10 @@ function transferFinancialSheet(prefix){
  const status=el('transfer-status');
  if(status){
   const missingText=missing.length?' Noch ohne Endbestand: '+missing.map(accountLabel).join(', ')+'.':'';
-  const gainText=prefix==='er'
-   ?' Berechne jetzt den Gewinn und trage ihn in die freie Zeile ein.'
-   :(resultRow.amount?' Der von dir erfasste Gewinn aus der Erfolgsrechnung wurde übernommen.':' Trage nach der Gewinnberechnung noch den Jahresgewinn ein.');
-  status.textContent=found.length+' Konten mit deinen Endbeständen übernommen.'+gainText+missingText;
+  const resultText=prefix==='er'
+   ?' Berechne Gewinn oder Verlust und trage den Betrag selbst ein.'
+   :(resultRow.amount?' Das von dir erfasste Jahresergebnis wurde übernommen.':' Trage nach der Erfolgsrechnung noch das Jahresergebnis ein.');
+  status.textContent=found.length+' Konten mit deinen Endbeständen übernommen.'+resultText+missingText;
  }
 }
 function showTransferButton(w,prefix,detail){
@@ -840,14 +839,14 @@ function showTransferButton(w,prefix,detail){
 function incomeStep(w){
  makeSection(w,'Erfolgsrechnung',completedSheets.er?'Deine korrekt geprüfte Erfolgsrechnung.':'Wähle die Aufwands- und Ertragskonten selbst aus oder übernimm deine Endbestände aus den T-Konten.');
  if(completedSheets.er){renderFinishedSheet(w,'er','Zur Schlussbilanz →',5);return}
- showTransferButton(w,'er','Übernimmt Konten und selbst erfasste Endbestände. Der Gewinn bleibt zum Selberberechnen frei.');
+ showTransferButton(w,'er','Übernimmt Konten und selbst erfasste Endbestände. Gewinn oder Verlust berechnest du selbst.');
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('er'));attachDynamicSheet(w,'er');
  dynamicSheetControls(w,'er','Erfolgsrechnung prüfen','Zur Schlussbilanz →',5);
 }
 function balanceStep(w){
  makeSection(w,'Schlussbilanz',completedSheets.bs?'Deine korrekt geprüfte Schlussbilanz mit Umlauf- und Anlagevermögen sowie Fremd- und Eigenkapital.':'Wähle die Konten selbst aus und ordne sie Aktiven oder Passiven zu. Die Endbestände aus den T-Konten kannst du freiwillig übernehmen.');
  if(completedSheets.bs){renderFinishedSheet(w,'bs','Zur Auswertung →',6);return}
- showTransferButton(w,'bs','Übernimmt die Bilanzkonten aus deinen T-Konten und einen von dir selbst berechneten Jahresgewinn aus der Erfolgsrechnung.');
+ showTransferButton(w,'bs','Übernimmt Bilanzkonten aus deinen T-Konten und den selbst berechneten Jahresgewinn bzw. Jahresverlust aus der Erfolgsrechnung.');
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('bs'));attachDynamicSheet(w,'bs');
  dynamicSheetControls(w,'bs','Schlussbilanz prüfen','Zur Auswertung →',6);
 }
