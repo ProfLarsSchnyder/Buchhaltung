@@ -462,14 +462,15 @@ function checkDynamicSheet(prefix,markFields=false){
  const mark=id=>{if(markFields)el(id)?.classList.add('field-error')};
  const labelFor=side=>side==='left'?sheetDef[prefix].left:sheetDef[prefix].right;
  for(const side of ['left','right']){
-  const got=new Map(),label=labelFor(side);
+  const got=new Map(),present=new Set(),label=labelFor(side);
   for(const [i,row] of rowsBySide[side].entries()){
    const name=String(row.account??'').trim(),raw=String(row.amount??'').trim();
    if(!name&&!raw)continue;
    const accountID='fs-'+prefix+'-'+side+'-a'+i,amountID='fs-'+prefix+'-'+side+'-v'+i;
    const position=label+' · Zeile '+(i+1);
    if(!name){errors.push(position+': Konto auswählen.');mark(accountID);continue}
-   if(got.has(name)){errors.push(position+': '+accountLabel(name)+' wurde mehrfach eingetragen.');mark(accountID);continue}
+   if(present.has(name)){errors.push(position+': '+accountLabel(name)+' wurde mehrfach eingetragen.');mark(accountID);continue}
+   present.add(name);
    if(!raw||!Number.isFinite(parseAmount(raw))){
     errors.push(position+': Betrag bei '+accountLabel(name)+' prüfen.');
     mark(amountID);continue;
@@ -485,7 +486,7 @@ function checkDynamicSheet(prefix,markFields=false){
     mark(amountID);
    }
   }
-  const missing=Object.entries(expected[side]).filter(([name,value])=>value!==0&&!got.has(name));
+  const missing=Object.entries(expected[side]).filter(([name,value])=>value!==0&&!present.has(name));
   if(missing.length)errors.push(label+': Es '+(missing.length===1?'fehlt ein benötigtes Konto.':'fehlen '+missing.length+' benötigte Konten.'));
  }
  const expectedTotal=sheetsTotal(prefix),state=sheetStoredState(prefix);
