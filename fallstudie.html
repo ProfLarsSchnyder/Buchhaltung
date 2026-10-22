@@ -789,7 +789,7 @@ function accountSolutionHTML(a){
  const sideTotal=Math.max(debitTotal,creditTotal);
  return '<h3>Musterlösung · '+escapeText(accountLabel(a))+'</h3>'
   +'<p class="mini">Zur Kontrolle – deine eigenen Eingaben bleiben unverändert.</p>'
-  +'<div class="simple-ledger">'+readonlyLedgerSide(k,'debit',data,sideTotal)+readonlyLedgerSide(k,'credit',data,sideTotal)+'</div>';
+  +'<div class="simple-ledger">'+readonlyLedgerSide(k,'debit',data.debit,sideTotal)+readonlyLedgerSide(k,'credit',data.credit,sideTotal)+'</div>';
 }
 function markLedgerErrors(k,errors){
  const card=el('account-result-'+k)?.closest('.account-box');
