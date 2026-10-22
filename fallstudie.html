@@ -307,7 +307,7 @@ function remember(){
 }
 const draftKey='bookit-draft-v5-'+world+(caseId==='grundlagen'?'':'-'+caseId);
 function persistDraft(){try{localStorage.setItem(draftKey,JSON.stringify({journal,openedAccounts,ledgerAnswers,ledgerTotals,erAnswers,balanceAnswers,openingAnswers,ledgerPreferences,dynamicSheetRows,completedSheets,lockedAccounts,activityStats}))}catch(e){}}
-try{const d=JSON.parse(localStorage.getItem(draftKey)||localStorage.getItem('bookit-draft-v4-'+world)||'null');if(d){
+try{const d=JSON.parse(localStorage.getItem(draftKey)||(caseId==='grundlagen'?localStorage.getItem('bookit-draft-v4-'+world):null)||'null');if(d){
  journal=d.journal||[];openedAccounts=d.openedAccounts||[];
  ledgerAnswers=d.ledgerAnswers||{};ledgerTotals=d.ledgerTotals||{};
  erAnswers=d.erAnswers||{};balanceAnswers=d.balanceAnswers||{};openingAnswers=d.openingAnswers||{};Object.assign(ledgerPreferences,d.ledgerPreferences||{});if(d.dynamicSheetRows)for(const key of ['op','er','bs']){if(d.dynamicSheetRows[key])dynamicSheetRows[key]=d.dynamicSheetRows[key]}
