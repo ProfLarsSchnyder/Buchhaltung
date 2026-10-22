@@ -561,7 +561,7 @@ function ledgerSideHtml(k,side,data){
  const value=ledgerPreferences.sums?computedSideTotal(data):totalsFor[side]??'';
  return '<section class="simple-side"><div class="simple-side-title"><span>'+caption+' '+sign+'</span></div>'
   +(openingSide(accounts[k])===side?'<div class="simple-line special"><span>AB</span><input id="lab'+k+t+'" inputmode="decimal" placeholder="Betrag" value="'+escapeText(data.ab)+'" aria-label="'+caption+' Anfangsbestand"></div>':'')
-  +'<div class="simple-entries">'+data.entries.map((entry,i)=>'<div class="simple-line"><span class="entry-label">Buchung</span><input id="lentry'+k+t+i+'" inputmode="decimal" placeholder="Betrag" value="'+escapeText(entry)+'" aria-label="'+caption+' Buchung"><button type="button" title="Buchung entfernen" aria-label="Buchung entfernen" data-del="'+k+'" data-side="'+side+'" data-index="'+i+'">×</button></div>').join('')+'</div>'
+  +'<div class="simple-entries">'+data.entries.map((entry,i)=>'<div class="simple-line"><span aria-hidden="true"></span><input id="lentry'+k+t+i+'" inputmode="decimal" placeholder="Betrag" value="'+escapeText(entry)+'" aria-label="'+caption+' Buchung"><button type="button" title="Buchung entfernen" aria-label="Buchung entfernen" data-del="'+k+'" data-side="'+side+'" data-index="'+i+'">×</button></div>').join('')+'</div>'
   +'<button type="button" class="simple-add" data-add="'+k+'" data-side="'+side+'">+ Buchung</button>'
   +'<div class="simple-line special eb-line"><span>EB</span><input id="leb'+k+t+'" inputmode="decimal" placeholder="Betrag" value="'+escapeText(data.eb)+'" aria-label="'+caption+' Endbestand"></div>'
   +'<div class="simple-line total-line"><strong>Summe</strong><input id="ltotal'+k+t+'" inputmode="decimal" placeholder="CHF" value="'+escapeText(value)+'" '+(ledgerPreferences.sums?'readonly title="Wird aus deinen Einträgen berechnet"':'')+' aria-label="'+caption+' Summe"></div></section>';
@@ -577,7 +577,7 @@ function readonlyLedgerSide(k,side,data){
  const line=(name,value,cls='')=>'<div class="ledger-static-line '+cls+'"><span class="ledger-static-label">'+name+'</span>'+valueHTML(value)+'</div>';
  return '<section class="simple-side read-only-side"><div class="simple-side-title">'+caption+' '+sign+'</div>'
  +(openingSide(account)===side?line('AB',data.ab):'')
- +'<div class="simple-entries ledger-static-entries">'+data.entries.map(v=>line('Buchung',v)).join('')+'</div>'
+ +'<div class="simple-entries ledger-static-entries">'+data.entries.map(v=>line('',v)).join('')+'</div>'
  +line(String(data.eb??'').trim()!==''?'EB':'',data.eb,'ledger-static-eb')
  +line('Summe',total,'ledger-static-total')+'</section>';
 }
