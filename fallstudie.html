@@ -767,6 +767,7 @@ function runLedgerTransfers(){
    ledger.debit.ab='';ledger.credit.ab='';
   }
   for(const [a,n] of availableAB){
+   if(!targets.has(a))continue; // geprüfte Konten niemals verändern
    const side=categories[a]==='asset'?'debit':'credit';
    ensureLedger(a)[side].ab=n;
   }
@@ -953,21 +954,24 @@ function transferFinancialSheet(prefix){
  }
  const old=dynamicSheetRows[prefix];
  const incomeResult=sourceResultFromIncome();
- const oldResult=prefix==='er'
-  ?old[profit<0?'right':'left'].find(r=>r.account===(profit<0?'Verlust':'Gewinn'))
-  :old.right.find(r=>r.account==='Jahresgewinn/Jahresverlust');
+ const enteredProfit=old.left.find(r=>r.account==='Gewinn');
+ const enteredLoss=old.right.find(r=>r.account==='Verlust');
+ const oldResult=prefix==='er'?null:old.right.find(r=>r.account==='Jahresgewinn/Jahresverlust');
  if([...old.left,...old.right].some(r=>r.account||String(r.amount??'').trim())){
-  if(!confirm('Die bisherigen Kontenzeilen werden aus deinen T-Konten neu übernommen. Bereits eingegebener Gewinn oder Verlust bleibt erhalten. Fortfahren?'))return;
+  if(!confirm('Die bisherigen Kontenzeilen werden aus deinen T-Konten neu übernommen. Bereits selbst eingetragener Gewinn oder Verlust bleibt erhalten. Fortfahren?'))return;
  }
- const resultRow=prefix==='er'
-  ?{account:profit<0?'Verlust':'Gewinn',amount:oldResult?.amount??''}
-  :(incomeResult||{account:'Jahresgewinn/Jahresverlust',amount:oldResult?.amount??''});
+ // Keine Ergebnisinformation aus der Musterlösung vorwegnehmen.
+ const resultRow=prefix==='er'?null:(incomeResult||{account:'Jahresgewinn/Jahresverlust',amount:oldResult?.amount??''});
  const mapped={
   left:found.filter(x=>x.side==='left').map(({account,amount})=>({account,amount})),
   right:found.filter(x=>x.side==='right').map(({account,amount})=>({account,amount}))
  };
- if(prefix==='er')mapped[profit<0?'right':'left'].push(resultRow);
- else mapped.right.push(resultRow);
+ if(prefix==='er'){
+  if(enteredProfit)mapped.left.push({...enteredProfit});
+  else mapped.left.push({account:'',amount:''});
+  if(enteredLoss)mapped.right.push({...enteredLoss});
+  else mapped.right.push({account:'',amount:''});
+ }else mapped.right.push(resultRow);
  mapped.left.sort((a,b)=>accountSort(a.account,b.account));
  mapped.right.sort((a,b)=>accountSort(a.account,b.account));
  dynamicSheetRows[prefix]=mapped;
@@ -979,9 +983,8 @@ function transferFinancialSheet(prefix){
   return String(row.amount??'').trim()&&Number.isFinite(n)?sum+n:sum;
  },0);
  if(prefix==='er'){
-  const correctSide=profit<0?'left':'right';
-  state.total0=formattedAmount(sumSide(correctSide));
-  state.total1=formattedAmount(sumSide(correctSide));
+  // Gesamtbeträge bleiben Lernaufgabe, keine automatischen Hinweise auf Gewinn/Verlust.
+  state.total0='';state.total1='';
  }else{
   const assetsTotal=sumSide('left');
   state.total0=formattedAmount(assetsTotal);
@@ -993,7 +996,7 @@ function transferFinancialSheet(prefix){
  if(status){
   const missingText=missing.length?' Noch ohne Endbestand: '+missing.map(accountLabel).join(', ')+'.':'';
   const resultText=prefix==='er'
-   ?' Berechne Gewinn oder Verlust und trage den Betrag selbst ein.'
+   ?' Entscheide selbst, ob ein Gewinn oder Verlust vorliegt. Trage ihn auf der richtigen Seite ein und berechne die Totale.'
    :(resultRow.amount?' Das von dir erfasste Jahresergebnis wurde übernommen.':' Trage nach der Erfolgsrechnung noch das Jahresergebnis ein.');
   status.textContent=found.length+' Konten mit deinen Endbeständen übernommen.'+resultText+missingText;
  }
@@ -1267,6 +1270,17 @@ document.addEventListener('focusout',e=>{
   if(step===3&&ledgerPreferences.sums)updateAutomaticSums();
  }
 },true);
+
+
+// Nach jeder Eingabe debounced lokal speichern (auch ohne Seitenwechsel).
+let draftSaveTimer=null;
+const queueDraftSave=()=>{if(draftSaveTimer)clearTimeout(draftSaveTimer);draftSaveTimer=setTimeout(()=>{
+ draftSaveTimer=null;
+ if(step>=1&&step<=5)remember();
+},450)};
+document.addEventListener('input',e=>{if(e.target.closest('#workspace'))queueDraftSave()});
+document.addEventListener('change',e=>{if(e.target.closest('#workspace'))queueDraftSave()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&draftSaveTimer){clearTimeout(draftSaveTimer);draftSaveTimer=null;remember()}});
 
 el('reset-entire-case').addEventListener('click',resetEntireCase);
 initAmountToolbar();
