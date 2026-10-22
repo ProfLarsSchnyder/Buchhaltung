@@ -230,6 +230,16 @@ main{padding-bottom:70px}
 @media(max-width:500px){.learning-review{padding:14px}.review-metrics{gap:6px}.review-metrics>div{padding:9px 7px}.review-metrics strong{font-size:20px}.review-metrics span{font-size:11px}}
 
 .wrong-result-side select,.wrong-result-side input{border-color:#c95c5c!important;color:#ac2525!important}
+
+/* Gestuftes Feedback: fehlerhafte Eingaben statt Musterwerte markieren. */
+.field-error{border:2px solid #d97743!important;background:#fff7ee!important;outline:none}
+.solution-panel{margin:18px 0 20px;padding:18px;border:1px solid #cbdee8;border-radius:12px;background:#fbfdff}
+.solution-panel[hidden]{display:none}
+.solution-panel h3{margin:0 0 6px;color:#253b55}
+.solution-panel .fin-sheet{margin-top:15px}
+.solution-panel .fin-head{padding:12px;font-size:17px}
+.solution-panel .fin-side-body{min-height:0}
+.solution-toggle{border-color:#a5bbd2;color:#245173}
 </style></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
@@ -259,7 +269,7 @@ const ledgerPreferences={ab:false,journal:false,sums:false};
 const dynamicSheetRows={op:{left:[],right:[]},er:{left:[],right:[]},bs:{left:[],right:[]}};
 const completedSheets={op:false,er:false,bs:false};
 const lockedAccounts={};
-const activityStats={checks:0,failedChecks:0,errorNotices:0,helps:{opening:0,journal:0,autoSums:0,income:0,balance:0,sumButton:0,copy:0,paste:0}};
+const activityStats={checks:0,failedChecks:0,errorNotices:0,helps:{opening:0,journal:0,autoSums:0,income:0,balance:0,sumButton:0,copy:0,paste:0,solution:0}};
 function recordCheck(correct,issues=0){
  activityStats.checks++;
  if(!correct){activityStats.failedChecks++;activityStats.errorNotices+=Math.max(1,Number(issues)||1)}
@@ -440,30 +450,47 @@ function attachDynamicSheet(w,prefix){
   }
  });
 }
-function checkDynamicSheet(prefix){
+function checkDynamicSheet(prefix,markFields=false){
  const rowsBySide=dynamicSheetRows[prefix],expected=sheetDef[prefix].required(),errors=[];
+ if(markFields){
+  const container=el('dynamic-'+prefix);
+  container?.querySelectorAll('.field-error').forEach(node=>node.classList.remove('field-error'));
+ }
+ const mark=id=>{if(markFields)el(id)?.classList.add('field-error')};
+ const labelFor=side=>side==='left'?sheetDef[prefix].left:sheetDef[prefix].right;
  for(const side of ['left','right']){
-  const got=new Map();
-  for(const row of rowsBySide[side]){
-   const name=row.account.trim(),raw=String(row.amount??'').trim();
+  const got=new Map(),label=labelFor(side);
+  for(const [i,row] of rowsBySide[side].entries()){
+   const name=String(row.account??'').trim(),raw=String(row.amount??'').trim();
    if(!name&&!raw)continue;
-   if(!name){errors.push('Kontoauswahl '+(side==='left'?'links':'rechts'));continue}
-   if(got.has(name)){errors.push('Doppeltes Konto '+name);continue}
-   if(!raw||!Number.isFinite(parseAmount(raw))){errors.push('Betrag bei '+name);continue}
+   const accountID='fs-'+prefix+'-'+side+'-a'+i,amountID='fs-'+prefix+'-'+side+'-v'+i;
+   const position=label+' · Zeile '+(i+1);
+   if(!name){errors.push(position+': Konto auswählen.');mark(accountID);continue}
+   if(got.has(name)){errors.push(position+': '+accountLabel(name)+' wurde mehrfach eingetragen.');mark(accountID);continue}
+   if(!raw||!Number.isFinite(parseAmount(raw))){
+    errors.push(position+': Betrag bei '+accountLabel(name)+' prüfen.');
+    mark(amountID);continue;
+   }
    got.set(name,parseAmount(raw));
    if(!(name in expected[side])){
-    if(prefix==='er'&&name==='Gewinn'&&side==='right')errors.push('Gewinn gehört auf die Aufwandseite');
-    else if(prefix==='er'&&name==='Verlust'&&side==='left')errors.push('Verlust gehört auf die Ertragsseite');
-    else errors.push('Zuordnung '+name);
-   }else if(got.get(name)!==expected[side][name])errors.push('Betrag '+name);
+    if(prefix==='er'&&name==='Gewinn'&&side==='right')errors.push(position+': Gewinn gehört auf die Aufwandseite.');
+    else if(prefix==='er'&&name==='Verlust'&&side==='left')errors.push(position+': Verlust gehört auf die Ertragsseite.');
+    else errors.push(position+': Konto '+accountLabel(name)+' und Seitenzuordnung prüfen.');
+    mark(accountID);
+   }else if(got.get(name)!==expected[side][name]){
+    errors.push(position+': Betrag bei '+accountLabel(name)+' prüfen.');
+    mark(amountID);
+   }
   }
-  for(const [name,value] of Object.entries(expected[side])){
-   if(value!==0&&!got.has(name))errors.push('Konto fehlt auf '+(side==='left'?'linker':'rechter')+' Seite');
-  }
+  const missing=Object.entries(expected[side]).filter(([name,value])=>value!==0&&!got.has(name));
+  if(missing.length)errors.push(label+': Es '+(missing.length===1?'fehlt ein benötigtes Konto.':'fehlen '+missing.length+' benötigte Konten.'));
  }
  const expectedTotal=sheetsTotal(prefix),state=sheetStoredState(prefix);
  for(let idx=0;idx<2;idx++){
-  if(!String(state['total'+idx]??'').trim()||parseAmount(state['total'+idx])!==expectedTotal)errors.push('Total '+(idx===0?'links':'rechts'));
+  if(!String(state['total'+idx]??'').trim()||parseAmount(state['total'+idx])!==expectedTotal){
+   errors.push((idx===0?sheetDef[prefix].left:sheetDef[prefix].right)+': Gesamtsumme prüfen.');
+   mark(prefix+'T'+idx);
+  }
  }
  return [...new Set(errors)];
 }
@@ -485,7 +512,7 @@ function finishedSheetHTML(prefix){
    }).join('')
    +'</div><div class="fin-total"><strong>Total '+label+'</strong><span class="finished-total">'+escapeText(formattedAmount(totalState['total'+idx]))+'</span></div></section>';
  }
- return '<div class="fin-sheet finished-sheet"><div class="fin-head">'+cfg.title+' <span class="finished-check">✓ geprüft</span></div><div class="fin-panes">'+sideMarkup('left',cfg.left,0)+sideMarkup('right',cfg.right,1)+'</div></div>';
+ return '<div class="fin-sheet finished-sheet"><div class="fin-head">'+cfg.title+' <span class="finished-check">✓ geprüft · nach Kontonummer geordnet</span></div><div class="fin-panes">'+sideMarkup('left',cfg.left,0)+sideMarkup('right',cfg.right,1)+'</div></div>';
 }
 function renderFinishedSheet(w,prefix,nextText,nextStep){
  w.insertAdjacentHTML('beforeend',finishedSheetHTML(prefix));
@@ -496,18 +523,56 @@ function renderFinishedSheet(w,prefix,nextText,nextStep){
  buttons.append(button(nextText,()=>move(nextStep),'primary'));
  w.append(buttons);
 }
+
+function addSolutionReveal(actions,workspace,renderSolution){
+ const control=button('Musterlösung anzeigen',()=>{
+  const show=panel.hidden;
+  if(show){
+   panel.innerHTML=renderSolution();
+   panel.hidden=false;
+   control.textContent='Musterlösung ausblenden';
+   recordHelp('solution');
+  }else{
+   panel.hidden=true;
+   control.textContent='Musterlösung anzeigen';
+  }
+ },'secondary');
+ control.classList.add('solution-toggle');
+ actions.append(control);
+ const panel=document.createElement('section');
+ panel.className='solution-panel';panel.hidden=true;
+ panel.setAttribute('aria-label','Musterlösung');
+ workspace.append(panel);
+}
+function sheetSolutionHTML(prefix){
+ const def=sheetDef[prefix],expected=def.required(),grouping=FINISHED_GROUPS[prefix];
+ function pane(side,label,idx){
+  const rows=Object.entries(expected[side]).filter(([name,value])=>value!==0).sort((a,b)=>accountSort(a[0],b[0]));
+  return '<section class="fin-side finished-side"><div class="fin-side-title">'+label+'</div><div class="fin-side-body">'
+    +grouping[side].map(([heading,member])=>{
+      const matching=rows.filter(([account])=>member(account));
+      return '<div class="finished-group"><div class="finished-group-heading">'+heading+'</div>'
+        +(matching.length?matching.map(([account,value])=>'<div class="finished-row'+(isResultAccount(prefix,account)?' result-account '+resultColorClass(prefix,account,value):'')+'"><span>'+escapeText(accountLabel(account))+'</span><strong>'+escapeText(formattedAmount(value))+'</strong></div>').join(''):'<div class="finished-empty">–</div>')
+        +'</div>';
+    }).join('')
+    +'</div><div class="fin-total"><strong>Total '+label+'</strong><span class="finished-total">'+escapeText(formattedAmount(sheetsTotal(prefix)))+'</span></div></section>';
+ }
+ return '<h3>Musterlösung · '+escapeText(def.title)+'</h3><p class="mini">Zur Kontrolle – deine bisherigen Eingaben bleiben unverändert. Konten sind nach Kontonummer sortiert.</p>'
+ +'<div class="fin-sheet finished-sheet"><div class="fin-head">'+escapeText(def.title)+'</div><div class="fin-panes">'+pane('left',def.left,0)+pane('right',def.right,1)+'</div></div>';
+}
 function dynamicSheetControls(w,prefix,buttonText,nextLabel,nextStep){
  const actions=controls();actions.append(button(buttonText,()=>{
-  readDynamicSheet(prefix);const errors=checkDynamicSheet(prefix);
+  readDynamicSheet(prefix);const errors=checkDynamicSheet(prefix,true);
   recordCheck(!errors.length,errors.length);
   if(!errors.length){completedSheets[prefix]=true;persistDraft();render();return}
-  completedSheets[prefix]=false;persistDraft();info('Bitte überprüfe: '+errors.join(', ')+'.',false);
+  completedSheets[prefix]=false;persistDraft();info('Noch nicht korrekt: '+errors.join(' '),false);
  }));
  actions.append(button(nextLabel,()=>move(nextStep),'secondary'));w.append(actions);
+ addSolutionReveal(actions,w,()=>sheetSolutionHTML(prefix));
  w.insertAdjacentHTML('beforeend','<div id="info" class="message hide"></div>');
 }
 function openingStep(w){
- makeSection(w,'Eröffnungsbilanz',completedSheets.op?'Deine korrekt geprüfte Eröffnungsbilanz in der Schweizer Gliederung.':'Wähle die benötigten Konten selbst aus, ordne sie Aktiven oder Passiven zu und ergänze die Anfangsbestände und Summen.');
+ makeSection(w,'Eröffnungsbilanz',completedSheets.op?'Deine korrekt geprüfte Eröffnungsbilanz in der Schweizer Gliederung.':'Wähle die benötigten Konten selbst aus, ordne sie Aktiven oder Passiven zu und ergänze die Anfangsbestände und Summen. Die Kontenreihenfolge wird nicht bewertet; nach erfolgreicher Prüfung sortiert BOOKIT automatisch nach Kontonummer.');
  if(completedSheets.op){renderFinishedSheet(w,'op','Zu den Buchungssätzen →',2);return}
  w.insertAdjacentHTML('beforeend',dynamicSheetHTML('op'));attachDynamicSheet(w,'op');
  dynamicSheetControls(w,'op','Eröffnungsbilanz prüfen','Zu den Buchungssätzen →',2);
@@ -892,7 +957,8 @@ function learnerStatisticsHTML(){
   ['Automatische T-Konten-Summen',activityStats.helps.autoSums],
   ['Übernahme in die Erfolgsrechnung',activityStats.helps.income],
   ['Übernahme in die Schlussbilanz',activityStats.helps.balance],
-  ['Summe berechnen',activityStats.helps.sumButton]
+  ['Summe berechnen',activityStats.helps.sumButton],
+  ['Musterlösung angezeigt',activityStats.helps.solution]
  ];
  const used=helpNames.filter(x=>x[1]>0);
  const tools=[['Kopieren',activityStats.helps.copy],['Einfügen',activityStats.helps.paste]].filter(x=>x[1]>0);
