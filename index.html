@@ -154,36 +154,134 @@ $("cases-back-activities").onclick=showActivities;
 $("back-module").onclick=backToActivity;
 $("practice-back").onclick=backToActivity;
 $("result-modules").onclick=backToActivity;
-function amount(base,i){const seed=W.indexOf(world)+1;const factor=difficulty==="einfach"?1:difficulty==="mittel"?3:7;return (base+seed*(i+2)*25)*factor}
-function task(id,text,s,h,value,hint){return{id,type:"entry",text,s,h,value,hint}}
+
+function amount(base,i){
+ const seed=W.indexOf(world)+1;
+ const factor=difficulty==="einfach"?1:difficulty==="mittel"?3:7;
+ return (base+seed*(i+2)*25)*factor;
+}
+function task(id,text,s,h,value,hint="Überlege, welche Konten sich verändern und wo Zu- oder Abnahmen gebucht werden."){
+ return{id,type:"entry",text,s,h,value,hint};
+}
 function tasksForWorld(){
-const c=world.firm,p=world.product;
-const area={
- Fussball:'einen kleinen Fanartikelstand des FC Basel',
- Mode:'eine fiktive On-Verkaufsstelle',
- Gaming:'eine fiktive Digitec-Verkaufsstelle',
- Gastronomie:'einen fiktiven tibits-Stand',
- Autos:'einen fiktiven BMW-Zubehörstand',
- Fitness:'einen fiktiven Verkaufspunkt von update Fitness',
- Reisen:'einen fiktiven SWISS-Servicepunkt',
- Beauty:'einen fiktiven Import-Parfumerie-Stand',
- Musik:'einen fiktiven Merchandise-Stand des OpenAir St. Gallen'
-}[world.id];
-return [
-task("capital","Du eröffnest "+area+" und zahlst CHF {x} Eigenkapital auf das Bankkonto ein.","Bank","Eigenkapital",amount(2500,0),"Bank und Eigenkapital nehmen zu."),
-task("purchase","Du kaufst "+p+" für CHF {x} auf Rechnung und buchst den Einkauf direkt als Warenaufwand. Die MWST bleibt unberücksichtigt.","Warenaufwand","Verbindlichkeiten LL",amount(520,1),"Eine unbezahlte Lieferung erzeugt eine Verbindlichkeit."),
-task("sale","Du verkaufst "+p+" für CHF {x}. Der Betrag wird auf dein Bankkonto überwiesen. Ohne MWST.","Bank","Warenertrag",amount(790,2),"Der Verkauf steigert den Warenertrag und die Bank."),
-task("rent","Du bezahlst für diesen Geschäftsbereich die Monatsmiete von CHF {x} per Bank.","Mietaufwand","Bank",amount(300,3),"Die Miete ist Aufwand, das Bankguthaben sinkt."),
-task("payment","Du begleichst eine offene Lieferantenrechnung über CHF {x} mit einer Banküberweisung.","Verbindlichkeiten LL","Bank",amount(270,4),"Die Verbindlichkeiten und die Bank nehmen ab."),
-task("credit","Du verkaufst "+p+" im Wert von CHF {x} auf Rechnung. Ohne MWST.","Forderungen LL","Warenertrag",amount(1030,5),"Du hast eine Forderung gegenüber der Kundschaft."),
-task("furniture","Du kaufst für diesen Geschäftsbereich eine Einrichtung für CHF {x} und bezahlst per Bank. Ohne MWST.","Mobiliar","Bank",amount(1120,6),"Mobiliar ist ein Aktivkonto, genau wie Bank."),
-task("loan","Für den Geschäftsbereich erhältst du ein Bankdarlehen von CHF {x}, direkt auf das Bankkonto überwiesen.","Bank","Bankdarlehen",amount(2000,7),"Bank und Bankdarlehen nehmen zu."),
-task("interest","Du bezahlst CHF {x} Darlehenszinsen per Bank.","Zinsaufwand","Bank",amount(85,8),"Zinsen sind Aufwand.")
-]}
-function buildQuestions(){const level=difficulty==="einfach"?0:difficulty==="mittel"?1:2;const entries=tasksForWorld();const use=level===0?entries.slice(0,4):level===1?entries.slice(1,7):entries.slice(3);if(module==="buchungen")return use.map(t=>({...t,text:t.text.replace("{x}",t.value.toLocaleString("de-CH"))}));
-let types=module==="konten"?["Bank","Verbindlichkeiten LL","Warenaufwand","Warenertrag","Eigenkapital","Forderungen LL","Mobiliar","Zinsaufwand"]:module==="bilanz"?["Bank","Forderungen LL","Warenvorrat","Verbindlichkeiten LL","Bankdarlehen","Eigenkapital","Mobiliar"]:["Warenaufwand","Warenertrag","Mietaufwand","Zinsaufwand"];
-let selected=level===0?types.slice(0,4):level===1?types.slice(0,6):types;const start=(W.indexOf(world)*2)%selected.length;selected=selected.slice(start).concat(selected.slice(0,start));return selected.map((name,i)=>({id:module+"-"+name,type:"class",account:name,text:(module==="bilanz"?"Ordne für "+world.firm+" das Bilanzkonto «"+name+"» ein.":"Welche Kontenart hat das Konto «"+name+"» bei "+world.firm+"?"),hint:"Überlege, ob das Konto Vermögen, Schulden, Aufwand oder Ertrag darstellt."}))}
-function start(){questions=buildQuestions();position=0;session=[];$("training-category").textContent=world.id+" · "+D.find(d=>d[0]===difficulty)[1];$("training-title").textContent=M.find(m=>m[0]===module)[1];$("practice-crumb").textContent=M.find(m=>m[0]===module)[1];renderQ();page("practice")}
+ const p=world.product,c=world.firm;
+ const area={
+  Fussball:"den fiktiven Fanartikelstand des FC Basel",
+  Mode:"die fiktive On-Verkaufsstelle",
+  Gaming:"den fiktiven Digitec-Verkaufsstand",
+  Gastronomie:"den fiktiven tibits-Stand",
+  Autos:"den fiktiven BMW-Zubehörstand",
+  Fitness:"den fiktiven update-Fitness-Verkaufspunkt",
+  Reisen:"den fiktiven SWISS-Servicepunkt",
+  Beauty:"den fiktiven Import-Parfumerie-Stand",
+  Musik:"den fiktiven OpenAir-Merchstand"
+ }[world.id];
+ return [
+  task("kapital","Für "+area+" überweist die Eigentümerschaft CHF {x} Eigenkapital aufs Bankkonto.","Bank","Eigenkapital",amount(2500,0)),
+  task("einkauf","Du kaufst "+p+" für CHF {x} auf Rechnung, direkt als Warenaufwand erfasst.","Warenaufwand","Verbindlichkeiten LL",amount(520,1)),
+  task("verkauf-bank","Du verkaufst "+p+" für CHF {x}, direkt auf dein Bankkonto überwiesen.","Bank","Warenertrag",amount(790,2)),
+  task("miete","Du bezahlst CHF {x} Raummiete per Bank.","Mietaufwand","Bank",amount(300,3)),
+  task("lieferant","Du begleichst eine offene Lieferantenrechnung über CHF {x} mit einer Banküberweisung.","Verbindlichkeiten LL","Bank",amount(270,4)),
+  task("verkauf-rechnung","Du verkaufst "+p+" für CHF {x} auf Rechnung. Die Kundschaft bezahlt später.","Forderungen LL","Warenertrag",amount(1030,5)),
+  task("kundenzahlung","Ein Kunde bezahlt eine bestehende offene Rechnung von CHF {x} per Banküberweisung.","Bank","Forderungen LL",amount(670,6)),
+  task("mobiliar","Du kaufst einen Verkaufstisch für CHF {x} und bezahlst per Bank. Er wird als Mobiliar aktiviert.","Mobiliar","Bank",amount(1120,7)),
+  task("darlehen","Für "+area+" erhältst du ein langfristiges Darlehen von CHF {x}, direkt auf dem Bankkonto.","Bank","Darlehen",amount(2000,8)),
+  task("zinsaufwand","Die Bank belastet dir CHF {x} Darlehenszinsen.","Zinsaufwand","Bank",amount(85,9)),
+  task("barverkauf","Am Stand verkaufst du "+p+" bar für CHF {x}. Das Geld kommt in die Kasse.","Kasse","Warenertrag",amount(310,10)),
+  task("kasseneinzahlung","Du zahlst CHF {x} Bargeld aus der Kasse auf dein Bankkonto ein.","Bank","Kasse",amount(220,11)),
+  task("lohn","Du bezahlst CHF {x} Lohn für eine Aushilfe per Bank. Sozialabzüge bleiben unberücksichtigt.","Lohnaufwand","Bank",amount(900,12)),
+  task("werbung","Eine Werbeaktion für "+c+" kostet CHF {x}. Du bezahlst die Rechnung per Bank.","Werbeaufwand","Bank",amount(360,13)),
+  task("computer","Du kaufst einen Computer für CHF {x}, bezahlst ihn per Bank und aktivierst ihn als Informatik.","Informatik","Bank",amount(990,14)),
+  task("service","Du erbringst eine zusätzliche Dienstleistung für CHF {x}, die Kundschaft bezahlt per Bank.","Bank","Dienstleistungsertrag",amount(470,15)),
+  task("darlehen-rueckzahlung","Du zahlst CHF {x} von einem bestehenden langfristigen Darlehen per Bank zurück, ohne Zinsen.","Darlehen","Bank",amount(550,16)),
+  task("unterhalt","Eine Reparatur an deinem Geschäftsgerät kostet CHF {x}; sie wird direkt als Unterhaltsaufwand per Bank bezahlt.","Unterhaltsaufwand","Bank",amount(240,17)),
+  task("fahrzeug","Du bezahlst CHF {x} Treibstoff für das Geschäftsfahrzeug per Bank.","Fahrzeugaufwand","Bank",amount(195,18)),
+  task("verwaltung","Du bezahlst CHF {x} für Büromaterial und Verwaltung per Bank.","Verwaltungsaufwand","Bank",amount(155,19)),
+  task("zins-ertrag","Deine Bank schreibt deinem Bankkonto CHF {x} Zinsertrag gut.","Bank","Zinsertrag",amount(45,20)),
+  task("maschinen","Du kaufst eine Maschine für CHF {x} auf Rechnung. Sie gehört zu den Anlagen und nicht zum Warenaufwand.","Maschinen","Verbindlichkeiten LL",amount(2600,21))
+ ];
+}
+function rotated(items,shift){
+ if(!items.length)return [];
+ const start=shift%items.length;
+ return items.slice(start).concat(items.slice(0,start));
+}
+function accountQuestions(kind,level,count){
+ const pool=CATALOG.accounts.filter(a=>a.level<=level&&(
+  kind==='bilanz'?['Aktiv','Passiv'].includes(a.kind):
+  kind==='erfolg'?['Aufwand','Ertrag'].includes(a.kind):true
+ ));
+ const selected=[];
+ const kinds=kind==='bilanz'?['Aktiv','Passiv']:kind==='erfolg'?['Aufwand','Ertrag']:['Aktiv','Passiv','Aufwand','Ertrag'];
+ const groups=kinds.map((k,i)=>rotated(pool.filter(a=>a.kind===k),(W.indexOf(world)+i*2)%Math.max(1,pool.length)));
+ while(selected.length<count && groups.some(g=>g.length)){
+  for(const group of groups){
+   if(selected.length>=count)break;
+   if(group.length)selected.push(group.shift());
+  }
+ }
+ return selected.map((a,i)=>({
+  id:kind+'-'+a.number,type:'class',account:a.id,kind:a.kind,
+  text:kind==='bilanz'?'Ist '+accountDisplay(a.id)+' ein Aktiv- oder Passivkonto?':
+    kind==='erfolg'?'Ist '+accountDisplay(a.id)+' ein Aufwands- oder Ertragskonto?':
+    'Welche Kontenart hat '+accountDisplay(a.id)+'?',
+  hint:'Prüfe, ob das Konto einen Bestand (Vermögen/Finanzierung) oder einen Erfolg (Aufwand/Ertrag) beschreibt.'
+ }));
+}
+function movementQuestions(level,count){
+ const pool=rotated(CATALOG.accounts.filter(a=>a.level<=level),(W.indexOf(world)*3+level));
+ return pool.slice(0,count).map((a,i)=>{
+  const increase=i%3!==1;
+  const debitIncrease=a.kind==='Aktiv'||a.kind==='Aufwand';
+  const correct=increase?(debitIncrease?'Soll':'Haben'):(debitIncrease?'Haben':'Soll');
+  return{id:'bewegung-'+a.number+'-'+i,type:'movement',account:a.id,kind:a.kind,increase,correct,
+   text:'Das Konto '+accountDisplay(a.id)+' '+(increase?'nimmt zu':'nimmt ab')+'. Auf welcher Seite des T-Kontos wird diese Veränderung gebucht?',
+   hint:'Erinnere dich an die Zunahmeregel für die Kontenart. Eine Abnahme wird auf der Gegenseite gebucht.'};
+ });
+}
+function entryQuestions(level,count){
+ const pool=tasksForWorld();
+ const base=level===1?pool.slice(0,7):level===2?pool.slice(2,17):pool;
+ return rotated(base,(W.indexOf(world)+level*2)%base.length).slice(0,count)
+  .map(t=>({...t,text:t.text.replace('{x}',t.value.toLocaleString('de-CH'))}));
+}
+function detectiveQuestions(level,count){
+ const pool=entryQuestions(level,count);
+ const candidates=CATALOG.accounts.filter(a=>a.level<=level);
+ return pool.map((t,i)=>{
+  const variant=(i+W.indexOf(world))%4;
+  let shownS=t.s,shownH=t.h,shownValue=t.value,wrong='Kein Fehler';
+  if(variant===0){shownS=candidates.find(a=>a.id!==t.s&&a.id!==t.h)?.id||'Kasse';wrong='Sollkonto'}
+  if(variant===1){shownH=candidates.find(a=>a.id!==t.h&&a.id!==t.s)?.id||'Bank';wrong='Habenkonto'}
+  if(variant===2){shownValue=t.value+75;wrong='Betrag'}
+  return{id:'detektiv-'+t.id,type:'detective',s:t.s,h:t.h,value:t.value,wrong,
+   text:t.text+' Vorgeschlagene Buchung: Soll '+accountDisplay(shownS)+
+     ', Haben '+accountDisplay(shownH)+', CHF '+shownValue.toLocaleString('de-CH')+'. Welche Angabe stimmt nicht?',
+   hint:'Prüfe Sollkonto, Habenkonto und Betrag einzeln. Es kann auch alles richtig sein.'};
+ });
+}
+function buildQuestions(){
+ const level=difficulty==='einfach'?1:difficulty==='mittel'?2:3;
+ const count=level===1?5:level===2?8:12;
+ if(module==='buchungen')return entryQuestions(level,count);
+ if(['konten','bilanz','erfolg'].includes(module))return accountQuestions(module,level,count);
+ if(module==='bewegungen')return movementQuestions(level,count);
+ if(module==='detective')return detectiveQuestions(level,count);
+ if(module==='mixed'){
+  const entries=entryQuestions(level,level===1?2:level===2?3:4);
+  const classes=accountQuestions('konten',level,level===1?2:level===2?3:4);
+  const movements=movementQuestions(level,level===1?2:level===2?3:4);
+  return entries.flatMap((t,i)=>[t,classes[i],movements[i]].filter(Boolean));
+ }
+ return [];
+}
+function start(){
+ questions=buildQuestions();position=0;session=[];
+ $("training-category").textContent=world.id+' · '+D.find(d=>d[0]===difficulty)[1];
+ $("training-title").textContent=moduleTitle();
+ $("practice-crumb").textContent=moduleTitle();
+ renderQ();page('practice');
+}
 function renderQ(){answered=false;usedHint=false;usedSolution=false;const q=questions[position];$("number").textContent=position+1;$("training-count").textContent="Aufgabe "+(position+1)+" von "+questions.length;$("progress-fill").style.width=(position/questions.length*100)+"%";$("case").textContent=q.text;$("feedback").className="feedback hidden";$("hint-output").className="feedback bad hidden";$("training-solution").className="feedback hidden";$("show-solution").textContent="Musterlösung anzeigen";$("check").disabled=false;$("next").textContent=position===questions.length-1?"Training beenden →":"Überspringen →";const opts='<option value="">Konto wählen</option>'+A.map(x=>'<option>'+x[0]+'</option>').join("");$("fields").innerHTML=q.type==="entry"?'<div><label for="soll">Sollkonto</label><select id="soll" required>'+opts+'</select></div><div><label for="haben">Habenkonto</label><select id="haben" required>'+opts+'</select></div><div><label for="amount">Betrag (CHF)</label><input id="amount" required inputmode="decimal" placeholder="z. B. 2400"></div>':'<div><label for="kind-select">Kontenart</label><select id="kind-select" required><option value="">Bitte wählen</option><option>Aktiv</option><option>Passiv</option><option>Aufwand</option><option>Ertrag</option></select></div>'}
 
 $("hint").onclick=()=>{usedHint=true;$("hint-output").textContent=questions[position].hint;$("hint-output").className="feedback bad"};
