@@ -231,6 +231,7 @@ const W=[
 {id:"Beauty",image:"Beauty.jpg",firm:"Import Parfumerie",product:"Kosmetikprodukte",business:"Kosmetik und Beauty"},
 {id:"Musik",image:"Musik.jpg",firm:"OpenAir St. Gallen",product:"Merchandise",business:"Musikveranstaltungen und Events"}];
 const CATALOG=window.BOOKIT_MODULES;
+const REF=window.BOOKIT_REFERENCE;
 let TOPIC=CATALOG.topics[0];
 let M=TOPIC.exercises.map(x=>[x.id,x.title,x.description]);
 function selectTopic(id){
@@ -247,8 +248,114 @@ const moduleTitle=()=>module==='mixed'?'Gemischte Aufgaben':module==='detective'
 const $=id=>document.getElementById(id);let world=W[0],module="buchungen",difficulty="einfach",questions=[],position=0,session=[],answered=false,history=[],usedHint=false,usedSolution=false,exerciseRun=0;
 try{const x=JSON.parse(localStorage.getItem("bookit-v3")||"[]");if(Array.isArray(x))history=x}catch(e){}
 function save(){try{localStorage.setItem("bookit-v3",JSON.stringify(history))}catch(e){}}
-function page(id){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===id));if(id==="progress")renderProgress();scrollTo(0,0)}
-document.addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)page(b.dataset.page)});$("logo").onclick=()=>page("home");
+function page(id){
+ document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));
+ document.querySelectorAll('nav [data-page]').forEach(b=>{
+  const active=b.dataset.page===id;
+  b.classList.toggle('nav-active',active);
+  if(typeof b.setAttribute==='function'){
+   if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
+  }
+ });
+ if(id==='progress')renderProgress();
+ if(id==='landing')renderLanding();
+ if(id==='reference')renderReference();
+ if(id==='glossary')renderGlossary();
+ if(id==='guide')renderGuide();
+ scrollTo(0,0);
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)page(b.dataset.page)});$("logo").onclick=()=>page("landing");
+
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function searchText(value){return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+let referenceKind='Alle';
+function renderLanding(){
+ const output=$('home-continue');
+ if(!output)return;
+ let cases=[];
+ try{
+  for(const item of W)for(const variant of CATALOG.caseVariants){
+   const key='bookit-draft-v5-'+item.id+(variant.id==='grundlagen'?'':'-'+variant.id);
+   const data=JSON.parse(localStorage.getItem(key)||'null');
+   if(data){
+    cases.push({world:item.id,caseId:variant.id,title:variant.title,
+     changed:Number.isFinite(Date.parse(data.updatedAt))?Date.parse(data.updatedAt):0,
+     done:Object.values(data.completedSheets||{}).filter(Boolean).length});
+   }
+  }
+ }catch(e){cases=[]}
+ cases.sort((a,b)=>b.changed-a.changed);
+ if(cases.length){
+  const recent=cases[0];
+  const url='fallstudie.html?welt='+encodeURIComponent(recent.world)+'&case='+encodeURIComponent(recent.caseId);
+  output.innerHTML='<span class="eyebrow">DEIN NÄCHSTER SCHRITT</span><h3>Weiter, wo du aufgehört hast.</h3>'
+   +'<p>'+escapeHtml(recent.world)+' · '+escapeHtml(recent.title)+' · '+recent.done+' von 3 Rechnungsübersichten geprüft.</p>'
+   +'<a href="'+url+'">Fallstudie fortsetzen →</a>';
+ }else if(history.length){
+  const last=history[history.length-1];
+  const existing=W.find(x=>x.id===last.world);
+  if(existing){
+   output.innerHTML='<span class="eyebrow">WIEDER DA?</span><h3>Deine letzte Themenwelt: '+escapeHtml(existing.id)+'</h3>'
+     +'<p>Du hast dort bereits trainiert. Starte mit weiteren Aufgaben in derselben Welt.</p>'
+     +'<button type="button" data-continue-world="'+escapeHtml(existing.id)+'">In '+escapeHtml(existing.id)+' weiterlernen →</button>';
+  }
+ }else{
+  output.innerHTML='<span class="eyebrow">NEU BEI BOOKIT?</span><h3>In drei Schritten zum ersten Buchungssatz.</h3>'
+   +'<p>1. Themenwelt wählen · 2. Buchhaltungsthema auswählen · 3. Lernen, trainieren oder eine Fallstudie bearbeiten.</p>'
+   +'<button type="button" data-page="guide">So funktioniert BOOKIT →</button>';
+ }
+}
+$('home-continue').addEventListener('click',e=>{
+ const b=e.target.closest('[data-continue-world]');if(!b)return;
+ const selected=W.find(w=>w.id===b.dataset.continueWorld);
+ if(selected){world=selected;showTopics();}
+});
+function renderReference(){
+ const search=searchText($('reference-search').value.trim());
+ const filtered=REF.accounts.filter(a=>(referenceKind==='Alle'||a.kind===referenceKind)
+  &&(!search||searchText([a.number,a.name,a.kind,a.group,a.description].join(' ')).includes(search)));
+ $('reference-count').textContent=filtered.length+' Konten in dieser Ansicht · '+REF.accounts.length+' Einträge insgesamt';
+ document.querySelectorAll('#reference-filters [data-ref-kind]').forEach(b=>{
+  b.classList.toggle('selected',b.dataset.refKind===referenceKind);
+  b.setAttribute?.('aria-pressed',String(b.dataset.refKind===referenceKind));
+ });
+ const groups=new Map();
+ for(const account of filtered){
+  const key=account.kind+' · '+account.group;
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(account);
+ }
+ const markup=[...groups.entries()].map(([group,accounts])=>
+  '<div class="ref-group"><div class="ref-group-head"><strong>'+escapeHtml(group)+'</strong><span>'+accounts.length+' Konten</span></div>'
+  +accounts.map(a=>'<div class="ref-account"><div class="ref-account-number">'+escapeHtml(a.number)+'</div>'
+   +'<div class="ref-account-name">'+escapeHtml(a.name)+'</div><div class="ref-account-desc">'+escapeHtml(a.description)+'</div></div>').join('')
+  +'</div>').join('');
+ $('reference-results').innerHTML=markup||'<div class="panel"><h2>Keine Konten gefunden</h2><p>Versuche einen anderen Suchbegriff oder setze den Filter zurück.</p></div>';
+}
+$('reference-search').addEventListener('input',renderReference);
+$('reference-filters').addEventListener('click',e=>{
+ const button=e.target.closest('[data-ref-kind]');if(!button)return;
+ referenceKind=button.dataset.refKind;renderReference();
+});
+$('reference-clear').onclick=()=>{
+ referenceKind='Alle';$('reference-search').value='';renderReference();$('reference-search').focus();
+};
+function renderGlossary(){
+ const query=searchText($('glossary-search').value.trim());
+ const matched=REF.glossary.filter(t=>!query||searchText([t.term,t.category,t.definition,t.example].join(' ')).includes(query));
+ $('glossary-count').textContent=matched.length+' Begriffe';
+ $('glossary-list').innerHTML=matched.length?matched.map(t=>
+  '<details class="glossary-item"><summary><span>'+escapeHtml(t.term)+'</span><small>'+escapeHtml(t.category)+'</small></summary>'
+  +'<div class="glossary-item-body"><p>'+escapeHtml(t.definition)+'</p><p><strong>Beispiel:</strong> '+escapeHtml(t.example)+'</p></div></details>'
+ ).join(''):'<p class="muted">Keine Begriffe gefunden.</p>';
+}
+$('glossary-search').addEventListener('input',renderGlossary);
+function renderGuide(){
+ $('guide-faq').innerHTML=REF.help.map((entry,i)=>
+  '<details'+(i===0?' open':'')+'><summary>'+escapeHtml(entry.question)+'</summary><p>'+escapeHtml(entry.answer)+'</p></details>'
+ ).join('');
+}
+
 $("world-grid").innerHTML=W.map(w=>'<button class="world" data-world="'+w.id+'"><img src="'+w.image+'" loading="lazy" alt="'+w.business+'"><div class="details"><strong>'+w.id+'</strong><small>'+w.business+'</small></div></button>').join("");
 
 $("world-grid").addEventListener("click",e=>{
@@ -652,4 +759,8 @@ $("import-progress-file").onchange=async e=>{
 };
 
 $("reset").onclick=()=>{if(confirm("Alle lokalen Testergebnisse löschen?")){history=[];save();renderProgress()}};
+
+// Öffnet von Fallstudien aus direkt die Themenwelten, sonst die BOOKIT-Startseite.
+if(typeof location!=='undefined'&&location.hash==='#themenwelten')page('home');
+else page('landing');
 </script></body></html>
