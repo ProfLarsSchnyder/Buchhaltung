@@ -303,7 +303,8 @@ function renderQ(){
  $("check").disabled=false;
  $("next").textContent=position===questions.length-1?'Training beenden →':'Überspringen →';
  if(q.type==='entry'){
-  const choices='<option value="">Konto wählen</option>'+CATALOG.accounts.map(a=>
+  const limit=difficulty==='einfach'?1:difficulty==='mittel'?2:3;
+  const choices='<option value="">Konto wählen</option>'+CATALOG.accounts.filter(a=>a.level<=limit).map(a=>
    '<option value="'+a.id+'">'+a.number+' · '+a.id+'</option>').join('');
   $("fields").innerHTML='<div><label for="soll">Sollkonto</label><select id="soll" required>'+choices+'</select></div>'
   +'<div><label for="haben">Habenkonto</label><select id="haben" required>'+choices+'</select></div>'
