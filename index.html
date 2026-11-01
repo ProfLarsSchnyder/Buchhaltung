@@ -319,15 +319,27 @@ function renderQ(){
    +'<option value="">Bitte wählen</option><option>Sollkonto</option><option>Habenkonto</option><option>Betrag</option><option>Kein Fehler</option></select></div>';
  }
 }
+function noteAssistance(kind){
+ if(kind==='hint')usedHint=true;
+ if(kind==='solution')usedSolution=true;
+ if(answered){
+  const last=session[session.length-1];
+  if(last&&last.id===questions[position].id){
+   if(kind==='hint')last.hintUsed=true;
+   if(kind==='solution')last.solutionShown=true;
+   save();
+  }
+ }
+}
 $("hint").onclick=()=>{
- usedHint=true;
+ noteAssistance('hint');
  $("hint-output").textContent=questions[position].hint;
  $("hint-output").className='feedback bad';
 };
 $("show-solution").onclick=()=>{
  const solution=$("training-solution"),show=solution.classList.contains('hidden');
  if(show){
-  usedSolution=true;
+  noteAssistance('solution');
   const q=questions[position];
   if(q.type==='entry'||q.type==='detective'){
    solution.textContent='Musterlösung: Soll '+accountDisplay(q.s)+' · Haben '+accountDisplay(q.h)+' · CHF '+q.value.toLocaleString('de-CH')
