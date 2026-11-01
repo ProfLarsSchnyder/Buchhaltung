@@ -4,12 +4,16 @@ on:
     paths:
       - "fallstudie.html"
       - "fallstudien-data.js"
+      - "index.html"
+      - "bookit-module-catalog.js"
       - "tests/**"
       - ".github/workflows/bookit-tests.yml"
   pull_request:
     paths:
       - "fallstudie.html"
       - "fallstudien-data.js"
+      - "index.html"
+      - "bookit-module-catalog.js"
       - "tests/**"
 jobs:
   accounting:
@@ -20,4 +24,4 @@ jobs:
         with:
           node-version: "22"
       - name: Bilanz, Erfolgsrechnung und Speicherung testen
-        run: node --test tests/bookit-cases.test.cjs
+        run: node --test tests/*.test.cjs
