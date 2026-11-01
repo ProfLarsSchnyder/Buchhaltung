@@ -79,16 +79,6 @@ nav button.nav-active{color:#61dcba;font-weight:800}
 .tool-title{font-size:18px;font-weight:850;color:#18304a}
 .tool-info{font-size:12px;color:#74849b;line-height:1.55;max-width:220px}
 .tool-arrow{position:absolute;right:18px;top:19px;color:#9aacb6;font-size:20px}
-.home-bottom{display:grid;grid-template-columns:1.12fr 1fr;gap:16px;margin-top:24px}
-.home-continue,.home-preview{background:#fff;border:1px solid #e0e8ee;border-radius:18px;padding:23px;min-height:192px}
-.home-continue h3,.home-preview strong{font-size:17px}
-.home-continue p{font-size:13px;color:#6b8094;line-height:1.55;max-width:410px}
-.home-continue a,.home-continue button{display:inline-flex;align-items:center;gap:6px;border:none;background:#e5f7f0;color:#136b50;font-weight:800;text-decoration:none;padding:12px 15px;border-radius:9px;margin-top:10px;font-size:13px}
-.home-preview-header{display:flex;gap:9px;align-items:center;margin-bottom:13px;color:#18304a}
-.home-preview-header span{font-size:20px;color:#178363}
-.home-preview-line{display:grid;grid-template-columns:54px 1fr auto;gap:7px;padding:7px 0;border-bottom:1px solid #edf1f3;font-size:12px;align-items:center}
-.home-preview-line b{color:#0c9774}.home-preview-line small{color:#6b8b9c}
-.home-text-link{padding:10px 0 0;background:none;border:0;color:#0b8b6a;font-weight:800;font-size:12px}
 .reference-heading{max-width:760px;margin-bottom:24px}
 .reference-heading h1{font-size:clamp(31px,4vw,45px);letter-spacing:-1px;margin:8px 0}
 .reference-heading p{color:#6e8095;line-height:1.7}
@@ -141,6 +131,62 @@ nav button.nav-active{color:#61dcba;font-weight:800}
 @media(max-width:730px){header{height:auto;min-height:72px;flex-wrap:wrap;padding:14px 18px;gap:9px}nav{width:100%;overflow-x:auto;gap:17px;padding-bottom:2px}.home-hero{grid-template-columns:1fr;gap:14px;padding:35px 26px}.home-visual{min-height:255px}.visual-ledger{width:285px}.home-bottom{grid-template-columns:1fr}.ref-account{grid-template-columns:64px 1fr;gap:8px}.ref-account-desc{grid-column:2}.reference-official{flex-direction:column;align-items:flex-start}.guide-roadmap{grid-template-columns:1fr}}
 @media(max-width:500px){.home-hero h1{font-size:39px}.home-hero{border-radius:17px;padding:31px 22px}.home-hero-foot{gap:9px;font-size:10px}.home-tools{grid-template-columns:1fr 1fr;gap:9px}.home-tool{min-height:188px;padding:17px;gap:9px}.tool-symbol{width:44px;height:44px;font-size:26px}.tool-title{font-size:15px}.tool-info{font-size:11px}.tool-arrow{right:11px;top:13px}.glossary-grid{grid-template-columns:1fr}.ref-account{padding:13px}.reference-toolbar{padding:14px}.home-visual{min-height:240px}.float-a{left:0}.float-b{right:0}}
 @media(prefers-reduced-motion:reduce){.home-tool,.hero-start,.activity-card{transition:none}}
+
+/* Eine bildschirmfüllende Startseite ohne überflüssigen unteren Bereich. */
+.home-hero{min-height:330px;max-height:395px;padding:34px 39px}
+.home-hero h1{font-size:clamp(36px,3.8vw,51px);line-height:1.08;letter-spacing:-1.7px;margin:15px 0 12px}
+.home-hero p{font-size:14px;line-height:1.58;max-width:475px}
+.home-hero-actions{margin-top:19px}
+.home-hero-foot{padding-top:16px}
+.home-visual{min-height:250px}
+.visual-ledger{width:min(100%,275px);padding:0 15px 13px}
+.visual-ledger-head{height:30px}
+.visual-ledger-title{font-size:15px;padding:12px 0 10px}
+.visual-ledger-columns{padding:7px 0}
+.visual-ledger-values{font-size:14px;line-height:1.5;padding:9px 0}
+.visual-ledger-total{font-size:14px;padding:8px 0 0}
+.visual-float{padding:9px 12px}
+.float-a{top:8px}.float-b{bottom:7px}
+.home-section-heading{margin:21px 0 13px}
+.home-section-heading h2{font-size:25px;margin:4px 0}
+.home-section-heading p{font-size:12px;margin:3px 0}
+.home-tool{min-height:151px;padding:17px;gap:6px}
+.tool-symbol{width:42px;height:42px;font-size:25px;border-radius:12px}
+.tool-title{font-size:16px}
+.tool-info{font-size:11px;line-height:1.4}
+.tool-arrow{top:14px;right:14px}
+@media(min-width:850px) and (min-height:670px){
+ html:has(#landing.active),body:has(#landing.active){height:100%;overflow:hidden}
+ body:has(#landing.active) main{height:calc(100dvh - 76px);padding-top:clamp(13px,2.4vh,24px);padding-bottom:clamp(13px,2.4vh,24px);display:flex;flex-direction:column;justify-content:center}
+ #landing.active{display:flex;flex-direction:column;justify-content:center;min-height:0;gap:0;padding:0}
+ #landing .home-hero{height:clamp(280px,43vh,395px);min-height:0;flex-shrink:1}
+ #landing .home-tools{flex-shrink:0}
+ body:has(#landing.active) footer{display:none}
+}
+@media(min-width:850px) and (min-height:670px) and (max-height:760px){
+ #landing .home-hero{height:clamp(255px,41vh,340px)}
+ #landing .home-section-heading{margin:12px 0 9px}
+ #landing .home-tool{min-height:127px;padding:13px}
+ #landing .tool-symbol{width:34px;height:34px;font-size:21px}
+ #landing .home-hero h1{font-size:clamp(34px,3.4vw,45px)}
+ #landing .home-hero-foot{padding-top:10px}
+}
+@media(max-width:849px), (max-height:669px){
+ body:has(#landing.active){overflow:auto}
+ .home-hero{max-height:none;min-height:0}
+}
+@media(max-width:730px){
+ .home-hero{padding:30px 25px}
+ .home-visual{min-height:235px}
+}
+@media(max-width:500px){
+ .home-hero{padding:27px 20px}
+ .home-hero h1{font-size:39px}
+ .home-tools{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .home-tool{min-height:161px;padding:14px}
+ .tool-symbol{width:39px;height:39px}
+ .home-section-heading{margin-top:23px}
+}
 </style><script src="bookit-module-catalog.js"></script><script src="bookit-reference-data.js"></script></head><body><header><button type="button" class="logo" id="logo" aria-label="BOOKIT Startseite">BOOK<span>IT.</span></button><nav aria-label="Hauptnavigation"><button data-page="landing">Start</button><button data-page="home">Themenwelten</button><button data-page="reference">Kontenplan</button><button data-page="progress">Fortschritt</button></nav></header><main>
 <section class="page active" id="landing">
  <div class="home-hero">
@@ -171,16 +217,7 @@ nav button.nav-active{color:#61dcba;font-weight:800}
   <button class="home-tool tool-progress" type="button" data-page="progress"><span class="tool-symbol" aria-hidden="true">◫</span><span class="tool-title">Mein Fortschritt</span><span class="tool-info">Deine Übungen, Fallstudien und bisherigen Ergebnisse.</span><span class="tool-arrow" aria-hidden="true">↗</span></button>
   <button class="home-tool tool-guide" type="button" data-page="guide"><span class="tool-symbol" aria-hidden="true">✳</span><span class="tool-title">Hilfe &amp; Anleitung</span><span class="tool-info">So funktioniert BOOKIT, inklusive Datensicherung.</span><span class="tool-arrow" aria-hidden="true">↗</span></button>
  </div>
- <div class="home-bottom">
-  <div class="home-continue" id="home-continue" aria-live="polite"></div>
-  <div class="home-preview">
-   <div class="home-preview-header"><span>▤</span><strong>Ein Blick in den Kontenplan</strong></div>
-   <div class="home-preview-line"><b>1000</b><span>Kasse</span><small>Aktiv</small></div>
-   <div class="home-preview-line"><b>1020</b><span>Bank</span><small>Aktiv</small></div>
-   <div class="home-preview-line"><b>2000</b><span>Verbindlichkeiten LL</span><small>Passiv</small></div>
-   <button type="button" data-page="reference" class="home-text-link">Zum Kontenplan <span aria-hidden="true">↗</span></button>
-  </div>
- </div>
+
 </section>
 <section class="page" id="home"><div class="crumb"><button type="button" data-page="landing">Startseite</button> / Themenwelten</div><div class="intro"><div class="eyebrow">SCHRITT 1 · DEIN EINSTIEG</div><h1>Welche Welt interessiert dich?</h1><p>Wähle zuerst eine Themenwelt. Danach kannst du dein Rechnungswesenthema und die passende Lernaktivität auswählen. Aktuell steht «Grundlagen der doppelten Buchhaltung» bereit.</p></div><div id="world-grid" class="worlds"></div></section>
 
@@ -258,7 +295,6 @@ function page(id){
   }
  });
  if(id==='progress')renderProgress();
- if(id==='landing')renderLanding();
  if(id==='reference')renderReference();
  if(id==='glossary')renderGlossary();
  if(id==='guide')renderGuide();
@@ -269,47 +305,6 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-page]");if
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function searchText(value){return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
 let referenceKind='Alle';
-function renderLanding(){
- const output=$('home-continue');
- if(!output)return;
- let cases=[];
- try{
-  for(const item of W)for(const variant of CATALOG.caseVariants){
-   const key='bookit-draft-v5-'+item.id+(variant.id==='grundlagen'?'':'-'+variant.id);
-   const data=JSON.parse(localStorage.getItem(key)||'null');
-   if(data){
-    cases.push({world:item.id,caseId:variant.id,title:variant.title,
-     changed:Number.isFinite(Date.parse(data.updatedAt))?Date.parse(data.updatedAt):0,
-     done:Object.values(data.completedSheets||{}).filter(Boolean).length});
-   }
-  }
- }catch(e){cases=[]}
- cases.sort((a,b)=>b.changed-a.changed);
- if(cases.length){
-  const recent=cases[0];
-  const url='fallstudie.html?welt='+encodeURIComponent(recent.world)+'&case='+encodeURIComponent(recent.caseId);
-  output.innerHTML='<span class="eyebrow">DEIN NÄCHSTER SCHRITT</span><h3>Weiter, wo du aufgehört hast.</h3>'
-   +'<p>'+escapeHtml(recent.world)+' · '+escapeHtml(recent.title)+' · '+recent.done+' von 3 Rechnungsübersichten geprüft.</p>'
-   +'<a href="'+url+'">Fallstudie fortsetzen →</a>';
- }else if(history.length){
-  const last=history[history.length-1];
-  const existing=W.find(x=>x.id===last.world);
-  if(existing){
-   output.innerHTML='<span class="eyebrow">WIEDER DA?</span><h3>Deine letzte Themenwelt: '+escapeHtml(existing.id)+'</h3>'
-     +'<p>Du hast dort bereits trainiert. Starte mit weiteren Aufgaben in derselben Welt.</p>'
-     +'<button type="button" data-continue-world="'+escapeHtml(existing.id)+'">In '+escapeHtml(existing.id)+' weiterlernen →</button>';
-  }
- }else{
-  output.innerHTML='<span class="eyebrow">NEU BEI BOOKIT?</span><h3>In drei Schritten zum ersten Buchungssatz.</h3>'
-   +'<p>1. Themenwelt wählen · 2. Buchhaltungsthema auswählen · 3. Lernen, trainieren oder eine Fallstudie bearbeiten.</p>'
-   +'<button type="button" data-page="guide">So funktioniert BOOKIT →</button>';
- }
-}
-$('home-continue').addEventListener('click',e=>{
- const b=e.target.closest('[data-continue-world]');if(!b)return;
- const selected=W.find(w=>w.id===b.dataset.continueWorld);
- if(selected){world=selected;showTopics();}
-});
 function renderReference(){
  const search=searchText($('reference-search').value.trim());
  const filtered=REF.accounts.filter(a=>(referenceKind==='Alle'||a.kind===referenceKind)
