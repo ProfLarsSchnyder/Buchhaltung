@@ -60,7 +60,7 @@ const A=CATALOG.accounts.map(a=>[a.id,a.kind]);
 const accountByName=new Map(CATALOG.accounts.map(a=>[a.id,a]));
 const accountDisplay=name=>{const a=accountByName.get(name);return a?a.number+' · '+a.id:name};
 const moduleTitle=()=>module==='mixed'?'Gemischte Aufgaben':module==='detective'?'Fehlerdetektiv':M.find(m=>m[0]===module)?.[1]||module;
-const $=id=>document.getElementById(id);let world=W[0],module="buchungen",difficulty="einfach",questions=[],position=0,session=[],answered=false,history=[],usedHint=false,usedSolution=false;
+const $=id=>document.getElementById(id);let world=W[0],module="buchungen",difficulty="einfach",questions=[],position=0,session=[],answered=false,history=[],usedHint=false,usedSolution=false,exerciseRun=0;
 try{const x=JSON.parse(localStorage.getItem("bookit-v3")||"[]");if(Array.isArray(x))history=x}catch(e){}
 function save(){try{localStorage.setItem("bookit-v3",JSON.stringify(history))}catch(e){}}
 function page(id){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===id));if(id==="progress")renderProgress();scrollTo(0,0)}
@@ -218,7 +218,7 @@ function accountQuestions(kind,level,count){
  ));
  const selected=[];
  const kinds=kind==='bilanz'?['Aktiv','Passiv']:kind==='erfolg'?['Aufwand','Ertrag']:['Aktiv','Passiv','Aufwand','Ertrag'];
- const groups=kinds.map((k,i)=>rotated(pool.filter(a=>a.kind===k),(W.indexOf(world)+i*2)%Math.max(1,pool.length)));
+ const groups=kinds.map((k,i)=>rotated(pool.filter(a=>a.kind===k),(W.indexOf(world)+i*2+exerciseRun*3)%Math.max(1,pool.length)));
  while(selected.length<count && groups.some(g=>g.length)){
   for(const group of groups){
    if(selected.length>=count)break;
@@ -234,7 +234,7 @@ function accountQuestions(kind,level,count){
  }));
 }
 function movementQuestions(level,count){
- const pool=rotated(CATALOG.accounts.filter(a=>a.level<=level),(W.indexOf(world)*3+level));
+ const pool=rotated(CATALOG.accounts.filter(a=>a.level<=level),(W.indexOf(world)*3+level+exerciseRun*3));
  return pool.slice(0,count).map((a,i)=>{
   const increase=i%3!==1;
   const debitIncrease=a.kind==='Aktiv'||a.kind==='Aufwand';
@@ -247,14 +247,14 @@ function movementQuestions(level,count){
 function entryQuestions(level,count){
  const pool=tasksForWorld();
  const base=level===1?pool.slice(0,7):level===2?pool.slice(2,17):pool;
- return rotated(base,(W.indexOf(world)+level*2)%base.length).slice(0,count)
+ return rotated(base,(W.indexOf(world)+level*2+exerciseRun*3)%base.length).slice(0,count)
   .map(t=>({...t,text:t.text.replace('{x}',t.value.toLocaleString('de-CH'))}));
 }
 function detectiveQuestions(level,count){
  const pool=entryQuestions(level,count);
  const candidates=CATALOG.accounts.filter(a=>a.level<=level);
  return pool.map((t,i)=>{
-  const variant=(i+W.indexOf(world))%4;
+  const variant=(i+W.indexOf(world)+exerciseRun)%4;
   let shownS=t.s,shownH=t.h,shownValue=t.value,wrong='Kein Fehler';
   if(variant===0){shownS=candidates.find(a=>a.id!==t.s&&a.id!==t.h)?.id||'Kasse';wrong='Sollkonto'}
   if(variant===1){shownH=candidates.find(a=>a.id!==t.h&&a.id!==t.s)?.id||'Bank';wrong='Habenkonto'}
@@ -281,6 +281,7 @@ function buildQuestions(){
  return [];
 }
 function start(){
+ exerciseRun++;
  questions=buildQuestions();position=0;session=[];
  $("training-category").textContent=world.id+' · '+D.find(d=>d[0]===difficulty)[1];
  $("training-title").textContent=moduleTitle();
