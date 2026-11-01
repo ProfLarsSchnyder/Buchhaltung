@@ -47,8 +47,14 @@ const W=[
 {id:"Beauty",image:"Beauty.jpg",firm:"Import Parfumerie",product:"Kosmetikprodukte",business:"Kosmetik und Beauty"},
 {id:"Musik",image:"Musik.jpg",firm:"OpenAir St. Gallen",product:"Merchandise",business:"Musikveranstaltungen und Events"}];
 const CATALOG=window.BOOKIT_MODULES;
-const TOPIC=CATALOG.topics[0];
-const M=TOPIC.exercises.map(x=>[x.id,x.title,x.description]);
+let TOPIC=CATALOG.topics[0];
+let M=TOPIC.exercises.map(x=>[x.id,x.title,x.description]);
+function selectTopic(id){
+ const next=CATALOG.topics.find(t=>t.id===id&&t.status==='active');
+ if(!next)return false;
+ TOPIC=next;M=TOPIC.exercises.map(x=>[x.id,x.title,x.description]);
+ return true;
+}
 const D=[["einfach","Einfach","Kleine Beträge, grundlegende Konten und direkte Geschäftsfälle."],["mittel","Mittel","Grössere Beträge, mehr Konten und unterschiedliche Zahlungsarten."],["schwer","Schwer","Anspruchsvollere Kontenkombinationen und komplexere Geschäftsfälle."]];
 const A=CATALOG.accounts.map(a=>[a.id,a.kind]);
 const accountByName=new Map(CATALOG.accounts.map(a=>[a.id,a]));
@@ -75,8 +81,7 @@ function showTopics(){
 }
 $("topic-grid").addEventListener("click",e=>{
  const b=e.target.closest("[data-topic]");if(!b)return;
- const selected=CATALOG.topics.find(t=>t.id===b.dataset.topic);
- if(!selected||selected.status!=='active')return;showActivities();
+ if(!selectTopic(b.dataset.topic))return;showActivities();
 });
 function showActivities(){
  $("activities-topic").textContent=TOPIC.title;
