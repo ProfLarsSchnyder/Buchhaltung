@@ -30,7 +30,7 @@ window.BOOKIT_MODULES = {
   activities:[
     {id:"lernen",title:"Lernen",icon:"📖",description:"Regeln, Beispiele und Kontenplan verstehen"},
     {id:"trainieren",title:"Trainieren",icon:"✏️",description:"Eine Fertigkeit gezielt üben"},
-    {id:"fallstudien",title:"Fallstudien",icon:"💼",description:"Vollständige Unternehmensbuchhaltungen bearbeiten"},
+    {id:"fallstudien",title:"BOOKIT",icon:"📒",description:"Das Herzstück: Führe ein Unternehmen von der Eröffnungsbilanz bis zur Schlussbilanz."},
     {id:"challenges",title:"Challenges",icon:"🏆",description:"Fehlerdetektiv und anspruchsvolle Anwendungen"},
     {id:"gemischt",title:"Gemischte Aufgaben",icon:"🔀",description:"Verschiedene Fertigkeiten ohne Vorgabe kombinieren"}
   ],
