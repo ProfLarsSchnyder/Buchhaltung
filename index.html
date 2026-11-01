@@ -32,7 +32,7 @@
 <section class="page" id="learning"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="learning-back-activities">Grundlagen</button> / Lernen</div><div class="intro"><div class="eyebrow">Grundlagen verstehen</div><h1 id="learning-title"></h1><p>Kurze Erklärungen, ein durchgerechnetes Beispiel und ein ausgewählter Kontenplan zum Nachschlagen.</p></div><div id="learning-body"></div></section>
 <section class="page" id="cases"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="cases-back-activities">Grundlagen</button> / Fallstudien</div><div class="intro"><div class="eyebrow">Die ganze Buchhaltung</div><h1 id="cases-title"></h1><p>Wählen Sie einen zusammenhängenden Geschäftsfall und führen Sie die vollständige Buchhaltung.</p></div><div id="case-grid" class="modules"></div></section>
 <section class="page" id="difficulty"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="back-module">Aufgabenarten</button> / <span id="difficulty-crumb"></span></div><div class="intro"><div class="eyebrow">Dein Training</div><h1>Wähle die Schwierigkeit</h1><p id="difficulty-desc"></p></div><div id="difficulty-grid" class="difficulties"></div></section>
-<section class="page" id="practice"><div class="lesson"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="practice-back">Zurück</button> / <span id="practice-crumb"></span></div><div class="intro"><div class="eyebrow" id="training-category"></div><h1 id="training-title"></h1><p id="training-count"></p></div><div class="progress"><div id="progress-fill"></div></div><div class="panel"><div class="eyebrow">Geschäftsfall <span id="number"></span></div><div id="case" class="case"></div><form id="form"><div class="fields" id="fields"></div><div class="actions"><button type="submit" id="check" class="primary">Antwort prüfen</button><button type="button" id="hint" class="secondary">Hinweis</button><button type="button" id="show-solution" class="secondary">Musterlösung anzeigen</button><button type="button" id="next" class="secondary">Nächste Aufgabe →</button></div></form><div id="hint-output" class="feedback bad hidden"></div><div id="feedback" class="feedback hidden" aria-live="polite"></div><div id="training-solution" class="feedback hidden" aria-live="polite"></div></div></div></section>
+<section class="page" id="practice"><div class="lesson"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="practice-back">Zurück</button> / <span id="practice-crumb"></span></div><div class="intro"><div class="eyebrow" id="training-category"></div><h1 id="training-title"></h1><p id="training-count"></p></div><div class="progress"><div id="progress-fill"></div></div><div class="panel"><div class="eyebrow">Aufgabe <span id="number"></span></div><div id="case" class="case"></div><form id="form"><div class="fields" id="fields"></div><div class="actions"><button type="submit" id="check" class="primary">Antwort prüfen</button><button type="button" id="hint" class="secondary">Hinweis</button><button type="button" id="show-solution" class="secondary">Musterlösung anzeigen</button><button type="button" id="next" class="secondary">Nächste Aufgabe →</button></div></form><div id="hint-output" class="feedback bad hidden"></div><div id="feedback" class="feedback hidden" aria-live="polite"></div><div id="training-solution" class="feedback hidden" aria-live="polite"></div></div></div></section>
 <section class="page" id="results"><div class="lesson"><div class="panel"><div class="eyebrow">Training abgeschlossen</div><h1>Geschafft!</h1><p id="result-description"></p><h1 id="result-count"></h1><div class="actions"><button class="primary" id="retry">Erneut üben</button><button class="secondary" id="result-modules">Andere Aufgaben</button></div></div></div></section>
 <section class="page" id="progress"><div class="intro"><div class="eyebrow">Dein persönlicher Bereich</div><h1>Mein Lernfortschritt</h1><p>Hier siehst du deine Übungsversuche. In dieser Testversion bleiben deine Daten nur in deinem Browser gespeichert.</p></div><div class="stats"><div class="stat"><b id="stat-total">0</b><small>Versuche</small></div><div class="stat"><b id="stat-correct">0</b><small>Richtig</small></div><div class="stat"><b id="stat-percent">0 %</b><small>Erfolgsquote</small></div></div><div class="panel"><h2>Meine Themenwelten</h2><div id="progress-worlds"></div><p class="mini" id="progress-hints"></p></div><div class="panel"><h2>Meine Unternehmensfälle</h2><p>Fallstudien bleiben getrennt gespeichert. Öffne einen Fall, um weiterzuarbeiten.</p><div id="case-progress"></div></div><div class="actions"><button class="secondary" id="export-progress">Lernstände sichern (JSON)</button><button class="secondary" id="import-progress-button">Sicherung importieren</button><input id="import-progress-file" type="file" accept=".json,application/json" hidden><button class="secondary" id="reset">Testfortschritt löschen</button></div></section>
 <footer>BOOKIT · Schweizer Buchhaltung · Schüleransicht · Alle Geschäftsfälle sind fiktiv.</footer></main><script>"use strict";
@@ -282,53 +282,106 @@ function start(){
  $("practice-crumb").textContent=moduleTitle();
  renderQ();page('practice');
 }
-function renderQ(){answered=false;usedHint=false;usedSolution=false;const q=questions[position];$("number").textContent=position+1;$("training-count").textContent="Aufgabe "+(position+1)+" von "+questions.length;$("progress-fill").style.width=(position/questions.length*100)+"%";$("case").textContent=q.text;$("feedback").className="feedback hidden";$("hint-output").className="feedback bad hidden";$("training-solution").className="feedback hidden";$("show-solution").textContent="Musterlösung anzeigen";$("check").disabled=false;$("next").textContent=position===questions.length-1?"Training beenden →":"Überspringen →";const opts='<option value="">Konto wählen</option>'+A.map(x=>'<option>'+x[0]+'</option>').join("");$("fields").innerHTML=q.type==="entry"?'<div><label for="soll">Sollkonto</label><select id="soll" required>'+opts+'</select></div><div><label for="haben">Habenkonto</label><select id="haben" required>'+opts+'</select></div><div><label for="amount">Betrag (CHF)</label><input id="amount" required inputmode="decimal" placeholder="z. B. 2400"></div>':'<div><label for="kind-select">Kontenart</label><select id="kind-select" required><option value="">Bitte wählen</option><option>Aktiv</option><option>Passiv</option><option>Aufwand</option><option>Ertrag</option></select></div>'}
 
-$("hint").onclick=()=>{usedHint=true;$("hint-output").textContent=questions[position].hint;$("hint-output").className="feedback bad"};
+function renderQ(){
+ answered=false;usedHint=false;usedSolution=false;
+ const q=questions[position];
+ $("number").textContent=position+1;
+ $("training-count").textContent='Aufgabe '+(position+1)+' von '+questions.length;
+ $("progress-fill").style.width=(position/questions.length*100)+'%';
+ $("case").textContent=q.text;
+ $("feedback").className='feedback hidden';
+ $("hint-output").className='feedback bad hidden';
+ $("training-solution").className='feedback hidden';
+ $("show-solution").textContent='Musterlösung anzeigen';
+ $("check").disabled=false;
+ $("next").textContent=position===questions.length-1?'Training beenden →':'Überspringen →';
+ if(q.type==='entry'){
+  const choices='<option value="">Konto wählen</option>'+CATALOG.accounts.map(a=>
+   '<option value="'+a.id+'">'+a.number+' · '+a.id+'</option>').join('');
+  $("fields").innerHTML='<div><label for="soll">Sollkonto</label><select id="soll" required>'+choices+'</select></div>'
+  +'<div><label for="haben">Habenkonto</label><select id="haben" required>'+choices+'</select></div>'
+  +'<div><label for="amount">Betrag (CHF)</label><input id="amount" inputmode="decimal" required placeholder="z. B. 2400"></div>';
+ }else if(q.type==='class'){
+  const classes=module==='bilanz'?['Aktiv','Passiv']:module==='erfolg'?['Aufwand','Ertrag']:['Aktiv','Passiv','Aufwand','Ertrag'];
+  $("fields").innerHTML='<div><label for="kind-select">Kontenart</label><select id="kind-select" required><option value="">Bitte wählen</option>'
+    +classes.map(k=>'<option value="'+k+'">'+k+'</option>').join('')+'</select></div>';
+ }else if(q.type==='movement'){
+  $("fields").innerHTML='<div><label for="movement-choice">Buchungsseite</label><select id="movement-choice" required>'
+   +'<option value="">Bitte wählen</option><option>Soll</option><option>Haben</option></select></div>';
+ }else if(q.type==='detective'){
+  $("fields").innerHTML='<div><label for="detective-choice">Was ist falsch?</label><select id="detective-choice" required>'
+   +'<option value="">Bitte wählen</option><option>Sollkonto</option><option>Habenkonto</option><option>Betrag</option><option>Kein Fehler</option></select></div>';
+ }
+}
+$("hint").onclick=()=>{
+ usedHint=true;
+ $("hint-output").textContent=questions[position].hint;
+ $("hint-output").className='feedback bad';
+};
 $("show-solution").onclick=()=>{
- const solution=$("training-solution");
- const show=solution.classList.contains('hidden');
+ const solution=$("training-solution"),show=solution.classList.contains('hidden');
  if(show){
   usedSolution=true;
   const q=questions[position];
-  solution.textContent=q.type==="entry"
-   ?"Musterlösung: Soll "+q.s+" · Haben "+q.h+" · CHF "+q.value.toLocaleString("de-CH")
-   :"Musterlösung: "+q.account+" ist ein "+A.find(a=>a[0]===q.account)[1]+"konto.";
-  solution.className="feedback";
-  $("show-solution").textContent="Musterlösung ausblenden";
+  if(q.type==='entry'||q.type==='detective'){
+   solution.textContent='Musterlösung: Soll '+accountDisplay(q.s)+' · Haben '+accountDisplay(q.h)+' · CHF '+q.value.toLocaleString('de-CH')
+    +(q.type==='detective'?(q.wrong==='Kein Fehler'?' · Der vorgeschlagene Satz stimmt.':' · Fehler im '+q.wrong+'.'):'');
+  }else if(q.type==='movement'){
+   solution.textContent='Musterlösung: '+q.correct+' ('+q.kind+'konto, '+(q.increase?'Zunahme':'Abnahme')+').';
+  }else{
+   solution.textContent='Musterlösung: '+accountDisplay(q.account)+' ist ein '+q.kind+'konto.';
+  }
+  solution.className='feedback';
+  $("show-solution").textContent='Musterlösung ausblenden';
  }else{
-  solution.className="feedback hidden";
-  $("show-solution").textContent="Musterlösung anzeigen";
+  solution.className='feedback hidden';
+  $("show-solution").textContent='Musterlösung anzeigen';
  }
 };
-$("form").addEventListener("submit",e=>{
+$("form").addEventListener('submit',e=>{
  e.preventDefault();if(answered)return;
- const q=questions[position];let ok=false,msg="",mistakes=[];
- for(const el of $("fields").querySelectorAll(".field-error"))el.classList.remove("field-error");
- if(q.type==="entry"){
-  const raw=$("amount").value.trim().replace(/['’\s]/g,"").replace(",",".");
+ const q=questions[position];let ok=false,msg='',mistakes=[];
+ for(const input of $("fields").querySelectorAll('.field-error'))input.classList.remove('field-error');
+ if(q.type==='entry'){
+  const raw=$("amount").value.trim().replace(/['’\s]/g,'').replace(',','.');
   const val=Number(raw);
-  if(!raw||!Number.isFinite(val)||val<0){$("feedback").textContent="Bitte einen gültigen Betrag eingeben.";$("feedback").className="feedback bad";return}
+  if(!raw||!Number.isFinite(val)||val<0){
+   $("feedback").textContent='Bitte einen gültigen Betrag eingeben.';
+   $("feedback").className='feedback bad';return;
+  }
   const debit=$("soll").value,credit=$("haben").value;
-  if(debit!==q.s){mistakes.push("Sollkonto");$("soll").classList.add("field-error")}
-  if(credit!==q.h){mistakes.push("Habenkonto");$("haben").classList.add("field-error")}
-  if(Math.abs(val-q.value)>=.001){mistakes.push("Betrag");$("amount").classList.add("field-error")}
+  if(debit!==q.s){mistakes.push('Sollkonto');$("soll").classList.add('field-error')}
+  if(credit!==q.h){mistakes.push('Habenkonto');$("haben").classList.add('field-error')}
+  if(Math.abs(val-q.value)>=.001){mistakes.push('Betrag');$("amount").classList.add('field-error')}
   ok=mistakes.length===0;
-  msg=ok?"Sollkonto, Habenkonto und Betrag stimmen.":"Prüfe: "+mistakes.join(", ")+".";
-  if(!ok&&debit===q.h&&credit===q.s)msg+=" Soll und Haben scheinen vertauscht.";
+  msg=ok?'Sollkonto, Habenkonto und Betrag stimmen.':'Prüfe: '+mistakes.join(', ')+'.';
+  if(!ok&&debit===q.h&&credit===q.s)msg+=' Soll und Haben könnten vertauscht sein.';
  }else{
-  ok=$("kind-select").value===A.find(a=>a[0]===q.account)[1];
-  msg=ok?"Die Kontenart stimmt.":"Prüfe die Kontenart nochmals.";
-  if(!ok)$("kind-select").classList.add("field-error");
+  const fieldId=q.type==='class'?'kind-select':q.type==='movement'?'movement-choice':'detective-choice';
+  const field=$(fieldId);
+  const correct=q.type==='class'?q.kind:q.type==='movement'?q.correct:q.wrong;
+  ok=field.value===correct;
+  if(!ok)field.classList.add('field-error');
+  msg=q.type==='class'?(ok?'Die Kontenart stimmt.':'Überprüfe die Kontenart.'):
+      q.type==='movement'?(ok?'Die Buchungsseite stimmt.':'Überprüfe die Zunahme oder Abnahme und die Kontenart.'):
+      (ok?'Fehleranalyse korrekt.':'Prüfe nochmals Sollkonto, Habenkonto und Betrag des vorgeschlagenen Buchungssatzes.');
  }
  answered=true;$("check").disabled=true;
- $("feedback").className="feedback"+(ok?"":" bad");
- $("feedback").textContent=(ok?"✓ Richtig! ":"Noch nicht richtig. ")+msg;
- const rec={world:world.id,module,difficulty,id:q.id,ok,hintUsed:usedHint,solutionShown:usedSolution,at:new Date().toISOString()};
+ $("feedback").className='feedback'+(ok?'':' bad');
+ $("feedback").textContent=(ok?'✓ Richtig! ':'Noch nicht richtig. ')+msg;
+ const rec={world:world.id,topic:TOPIC.id,module,difficulty,id:q.id,ok,hintUsed:usedHint,solutionShown:usedSolution,at:new Date().toISOString()};
  session.push(rec);history.push(rec);save();
- $("next").textContent=position===questions.length-1?"Ergebnis ansehen →":"Nächste Aufgabe →";
+ $("next").textContent=position===questions.length-1?'Ergebnis ansehen →':'Nächste Aufgabe →';
 });
-$("next").onclick=()=>{if(position===questions.length-1){const correct=session.filter(r=>r.ok).length;$("result-description").textContent=world.id+" · "+M.find(m=>m[0]===module)[1]+" · "+D.find(d=>d[0]===difficulty)[1];$("result-count").textContent=correct+" von "+questions.length+" richtig";page("results")}else{position++;renderQ()}};
+$("next").onclick=()=>{
+ if(position===questions.length-1){
+  const correct=session.filter(r=>r.ok).length;
+  $("result-description").textContent=world.id+' · '+moduleTitle()+' · '+D.find(d=>d[0]===difficulty)[1];
+  $("result-count").textContent=correct+' von '+questions.length+' richtig';
+  page('results');
+ }else{position++;renderQ()}
+};
 $("retry").onclick=start;
 function renderProgress(){
  const right=history.filter(x=>x.ok).length;
