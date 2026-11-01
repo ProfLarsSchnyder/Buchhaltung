@@ -253,7 +253,7 @@ main{padding-bottom:70px}
 .case-variant.chosen{border:2px solid #26876d;background:#edf8f3;padding:12px}
 .case-variant:hover{border-color:#26876d}
 @media(max-width:650px){.case-variant-grid{grid-template-columns:1fr}}
-</style><script src="fallstudien-data.js"></script></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html">← Themenwelten</a></header><main><div class="crumb"><a href="index.html">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
+</style><script src="fallstudien-data.js"></script></head><body><header><a href="index.html" class="brand">BOOK<span>IT.</span></a><a href="index.html#themenwelten">← Themenwelten</a></header><main><div class="crumb"><a href="index.html#themenwelten">Themenwelten</a> / <span id="crumb">Unternehmensbuchhaltung</span></div><div class="eyebrow" id="eyebrow">Basisfall · Schweizer Rechnungswesen</div><h1 id="title">Führe deine erste vollständige Buchhaltung</h1><p class="muted" id="subtitle"></p><div class="steps" id="steps"></div><div class="case-tools"><button type="button" id="reset-entire-case" class="reset-case">↻ Ganze Fallstudie zurücksetzen</button></div><section class="panel" id="workspace"></section><div class="footnote">BOOKIT Testversion. Diese Fallstudie arbeitet ohne Mehrwertsteuer. Eingaben bleiben beim Seitenwechsel erhalten und werden lokal gespeichert, Ergebnisse werden lokal gespeichert.</div></main><script>
 'use strict';
 const WORLD_DATA={Fussball:['FC Basel','Fanartikel'],Mode:['On','Sportschuhe'],Gaming:['Digitec','Gaming-Zubehör'],Gastronomie:['tibits','Lebensmittel'],Autos:['BMW','Autozubehör'],Fitness:['update Fitness','Sportartikel'],Reisen:['SWISS','Reisezubehör'],Beauty:['Import Parfumerie','Kosmetikartikel'],Musik:['OpenAir St. Gallen','Merchandise']};
 const query=new URLSearchParams(location.search);const selected=query.get('welt');const world=Object.hasOwn(WORLD_DATA,selected)?selected:'Fussball';const company=WORLD_DATA[world][0],product=WORLD_DATA[world][1];
@@ -306,7 +306,7 @@ function remember(){
  persistDraft();
 }
 const draftKey='bookit-draft-v5-'+world+(caseId==='grundlagen'?'':'-'+caseId);
-function persistDraft(){try{localStorage.setItem(draftKey,JSON.stringify({journal,openedAccounts,ledgerAnswers,ledgerTotals,erAnswers,balanceAnswers,openingAnswers,ledgerPreferences,dynamicSheetRows,completedSheets,lockedAccounts,activityStats}))}catch(e){}}
+function persistDraft(){try{localStorage.setItem(draftKey,JSON.stringify({updatedAt:new Date().toISOString(),journal,openedAccounts,ledgerAnswers,ledgerTotals,erAnswers,balanceAnswers,openingAnswers,ledgerPreferences,dynamicSheetRows,completedSheets,lockedAccounts,activityStats}))}catch(e){}}
 try{const d=JSON.parse(localStorage.getItem(draftKey)||(caseId==='grundlagen'?localStorage.getItem('bookit-draft-v4-'+world):null)||'null');if(d){
  journal=d.journal||[];openedAccounts=d.openedAccounts||[];
  ledgerAnswers=d.ledgerAnswers||{};ledgerTotals=d.ledgerTotals||{};
@@ -1099,7 +1099,7 @@ function review(w){
  }else{
   const note=document.createElement('p');note.className='muted';note.textContent='Einige Bereiche sind noch nicht korrekt oder unvollständig. Du kannst sie in beliebiger Reihenfolge bearbeiten und später wieder hierher zurückkehren.';w.append(note);
  }
- const c=controls();c.append(button('Fallstudie zurücksetzen',resetEntireCase,'secondary'));c.append(button('Zu den Themenwelten',()=>location.href='index.html','secondary'));w.append(c);
+ const c=controls();c.append(button('Fallstudie zurücksetzen',resetEntireCase,'secondary'));c.append(button('Zu den Themenwelten',()=>location.href='index.html#themenwelten','secondary'));w.append(c);
 }
 
 
