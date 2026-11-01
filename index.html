@@ -6,12 +6,34 @@
 .case-progress-row span:last-child{white-space:nowrap;font-size:12px;color:#16805a}
 .case-progress-row:hover{background:#f1f8f5}
 @media(max-width:580px){.case-progress-row{gap:7px}.case-progress-row span:last-child{white-space:normal;text-align:right}}
-</style></head><body><header><div class="logo" id="logo">BOOK<span>IT.</span></div><nav><button data-page="home">Themenwelten</button><button data-page="progress">Mein Fortschritt</button></nav></header><main>
-<section class="page active" id="home"><div class="intro"><div class="eyebrow">Schweizer Rechnungswesen lernen</div><h1>Welche Welt interessiert dich?</h1><p>Wähle deine Themenwelt und entdecke fiktive Geschäftsfälle rund um bekannte Unternehmen. In jeder Welt kannst du verschiedene Buchhaltungsthemen und Schwierigkeitsgrade üben.</p></div><div id="world-grid" class="worlds"></div></section>
-<section class="page" id="modules"><div class="crumb"><button data-page="home">Themenwelten</button> / <span id="module-crumb"></span></div><div class="intro"><div class="eyebrow">Deine Themenwelt</div><h1 id="world-heading"></h1><p>Was möchtest du üben? Wähle dein Buchhaltungsthema.</p></div><div id="module-grid" class="modules"></div></section>
-<section class="page" id="difficulty"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="back-module">Module</button> / <span id="difficulty-crumb"></span></div><div class="intro"><div class="eyebrow">Dein Training</div><h1>Wähle die Schwierigkeit</h1><p id="difficulty-desc"></p></div><div id="difficulty-grid" class="difficulties"></div></section>
-<section class="page" id="practice"><div class="lesson"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="practice-back">Module</button> / <span id="practice-crumb"></span></div><div class="intro"><div class="eyebrow" id="training-category"></div><h1 id="training-title"></h1><p id="training-count"></p></div><div class="progress"><div id="progress-fill"></div></div><div class="panel"><div class="eyebrow">Geschäftsfall <span id="number"></span></div><div id="case" class="case"></div><form id="form"><div class="fields" id="fields"></div><div class="actions"><button type="submit" id="check" class="primary">Antwort prüfen</button><button type="button" id="hint" class="secondary">Hinweis</button><button type="button" id="show-solution" class="secondary">Musterlösung anzeigen</button><button type="button" id="next" class="secondary">Nächste Aufgabe →</button></div></form><div id="hint-output" class="feedback bad hidden"></div><div id="feedback" class="feedback hidden" aria-live="polite"></div><div id="training-solution" class="feedback hidden" aria-live="polite"></div></div></div></section>
-<section class="page" id="results"><div class="lesson"><div class="panel"><div class="eyebrow">Training abgeschlossen</div><h1>Geschafft!</h1><p id="result-description"></p><h1 id="result-count"></h1><div class="actions"><button class="primary" id="retry">Erneut üben</button><button class="secondary" id="result-modules">Weitere Module</button></div></div></div></section>
+
+.activity-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;margin-top:28px}
+.activity-card{display:flex;flex-direction:column;gap:11px;align-items:flex-start;min-height:168px;background:#fff;border:1px solid #dce7ef;border-radius:16px;padding:22px;text-align:left;transition:.15s}
+.activity-card:hover{border-color:#15a47f;transform:translateY(-2px)}
+.activity-card strong{font-size:18px}.activity-card small{color:#6d8194;line-height:1.5}
+.activity-icon{font-size:27px}.case-link{text-decoration:none;color:inherit;display:block}.case-link:hover{border-color:#1ca784}
+.learning-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.learning-cards .panel{margin-top:0}
+.panel h2{font-size:20px;margin:12px 0}.panel p{line-height:1.7}
+.worked-entry{display:flex;flex-wrap:wrap;gap:12px;background:#e9f7f1;color:#196b4f;border-radius:10px;padding:16px}
+.account-filters{display:flex;flex-wrap:wrap;gap:7px;margin:15px 0}
+.account-filters .secondary{padding:9px 14px}
+.account-filters .active-filter{background:#185e4f;color:#fff}
+.account-catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.account-catalog-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px;background:#f3f7fa;border:1px solid #e5edf2;border-radius:9px;font-size:13px}
+.account-catalog-row span{color:#6f8294}
+@media(max-width:800px){.activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.activity-grid,.account-catalog,.learning-cards{grid-template-columns:1fr}}
+</style><script src="bookit-module-catalog.js"></script></head><body><header><div class="logo" id="logo">BOOK<span>IT.</span></div><nav><button data-page="home">Themenwelten</button><button data-page="progress">Mein Fortschritt</button></nav></header><main>
+<section class="page active" id="home"><div class="intro"><div class="eyebrow">Schweizer Rechnungswesen lernen</div><h1>Welche Welt interessiert dich?</h1><p>Wähle deine Themenwelt und entdecke fiktive Geschäftsfälle rund um bekannte Unternehmen. In jeder Welt beginnen Sie mit den Grundlagen der doppelten Buchhaltung. Lernen, üben und wenden Sie die Buchhaltung in abwechslungsreichen Aufgaben an.</p></div><div id="world-grid" class="worlds"></div></section>
+<section class="page" id="topics"><div class="crumb"><button data-page="home">Themenwelten</button> / <span id="topics-world"></span></div><div class="intro"><div class="eyebrow">Deine Themenwelt</div><h1 id="topics-heading"></h1><p>Wähle ein Rechnungswesenthema. Weitere Themen können später unabhängig ergänzt werden.</p></div><div id="topic-grid" class="modules"></div></section>
+<section class="page" id="activities"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="activities-back-topics">Themen</button> / <span id="activities-topic"></span></div><div class="intro"><div class="eyebrow">Dein Thema</div><h1 id="activities-heading"></h1><p>Wie möchten Sie dieses Thema bearbeiten?</p></div><div id="activity-grid" class="activity-grid"></div></section>
+<section class="page" id="modules"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="modules-back-activities">Grundlagen</button> / Trainieren</div><div class="intro"><div class="eyebrow">Gezielt üben</div><h1 id="world-heading"></h1><p>Wählen Sie eine Aufgabenart. Je nach Aufgabenart werden unterschiedliche Konten aus dem Schweizer Kontenrahmen verwendet.</p></div><div id="module-grid" class="modules"></div></section>
+<section class="page" id="learning"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="learning-back-activities">Grundlagen</button> / Lernen</div><div class="intro"><div class="eyebrow">Grundlagen verstehen</div><h1 id="learning-title"></h1><p>Kurze Erklärungen, ein durchgerechnetes Beispiel und ein ausgewählter Kontenplan zum Nachschlagen.</p></div><div id="learning-body"></div></section>
+<section class="page" id="cases"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="cases-back-activities">Grundlagen</button> / Fallstudien</div><div class="intro"><div class="eyebrow">Die ganze Buchhaltung</div><h1 id="cases-title"></h1><p>Wählen Sie einen zusammenhängenden Geschäftsfall und führen Sie die vollständige Buchhaltung.</p></div><div id="case-grid" class="modules"></div></section>
+<section class="page" id="difficulty"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="back-module">Aufgabenarten</button> / <span id="difficulty-crumb"></span></div><div class="intro"><div class="eyebrow">Dein Training</div><h1>Wähle die Schwierigkeit</h1><p id="difficulty-desc"></p></div><div id="difficulty-grid" class="difficulties"></div></section>
+<section class="page" id="practice"><div class="lesson"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="practice-back">Zurück</button> / <span id="practice-crumb"></span></div><div class="intro"><div class="eyebrow" id="training-category"></div><h1 id="training-title"></h1><p id="training-count"></p></div><div class="progress"><div id="progress-fill"></div></div><div class="panel"><div class="eyebrow">Geschäftsfall <span id="number"></span></div><div id="case" class="case"></div><form id="form"><div class="fields" id="fields"></div><div class="actions"><button type="submit" id="check" class="primary">Antwort prüfen</button><button type="button" id="hint" class="secondary">Hinweis</button><button type="button" id="show-solution" class="secondary">Musterlösung anzeigen</button><button type="button" id="next" class="secondary">Nächste Aufgabe →</button></div></form><div id="hint-output" class="feedback bad hidden"></div><div id="feedback" class="feedback hidden" aria-live="polite"></div><div id="training-solution" class="feedback hidden" aria-live="polite"></div></div></div></section>
+<section class="page" id="results"><div class="lesson"><div class="panel"><div class="eyebrow">Training abgeschlossen</div><h1>Geschafft!</h1><p id="result-description"></p><h1 id="result-count"></h1><div class="actions"><button class="primary" id="retry">Erneut üben</button><button class="secondary" id="result-modules">Andere Aufgaben</button></div></div></div></section>
 <section class="page" id="progress"><div class="intro"><div class="eyebrow">Dein persönlicher Bereich</div><h1>Mein Lernfortschritt</h1><p>Hier siehst du deine Übungsversuche. In dieser Testversion bleiben deine Daten nur in deinem Browser gespeichert.</p></div><div class="stats"><div class="stat"><b id="stat-total">0</b><small>Versuche</small></div><div class="stat"><b id="stat-correct">0</b><small>Richtig</small></div><div class="stat"><b id="stat-percent">0 %</b><small>Erfolgsquote</small></div></div><div class="panel"><h2>Meine Themenwelten</h2><div id="progress-worlds"></div><p class="mini" id="progress-hints"></p></div><div class="panel"><h2>Meine Unternehmensfälle</h2><p>Fallstudien bleiben getrennt gespeichert. Öffne einen Fall, um weiterzuarbeiten.</p><div id="case-progress"></div></div><div class="actions"><button class="secondary" id="export-progress">Lernstände sichern (JSON)</button><button class="secondary" id="import-progress-button">Sicherung importieren</button><input id="import-progress-file" type="file" accept=".json,application/json" hidden><button class="secondary" id="reset">Testfortschritt löschen</button></div></section>
 <footer>BOOKIT · Schweizer Buchhaltung · Schüleransicht · Alle Geschäftsfälle sind fiktiv.</footer></main><script>"use strict";
 const W=[
@@ -24,21 +46,114 @@ const W=[
 {id:"Reisen",image:"Reisen.jpg",firm:"SWISS",product:"Reisezubehör",business:"Reisebüro und Ferien"},
 {id:"Beauty",image:"Beauty.jpg",firm:"Import Parfumerie",product:"Kosmetikprodukte",business:"Kosmetik und Beauty"},
 {id:"Musik",image:"Musik.jpg",firm:"OpenAir St. Gallen",product:"Merchandise",business:"Musikveranstaltungen und Events"}];
-const M=[["konten","Kontenarten","Aktiven, Passiven, Aufwand und Ertrag erkennen"],["buchungen","Buchungssätze","Soll, Haben und Betrag selbstständig bestimmen"],["bilanz","Bilanz","Bilanzpositionen richtig einordnen"],["erfolg","Erfolgsrechnung","Erträge und Aufwendungen erkennen"],["casebook","Unternehmensbuchhaltung","Drei spannende Fallstudien: Basisfall, Krisenfall und grosse Challenge"],["mwst","Mehrwertsteuer","Buchungen mit Schweizer MWST, folgt später"]];
+const CATALOG=window.BOOKIT_MODULES;
+const TOPIC=CATALOG.topics[0];
+const M=TOPIC.exercises.map(x=>[x.id,x.title,x.description]);
 const D=[["einfach","Einfach","Kleine Beträge, grundlegende Konten und direkte Geschäftsfälle."],["mittel","Mittel","Grössere Beträge, mehr Konten und unterschiedliche Zahlungsarten."],["schwer","Schwer","Anspruchsvollere Kontenkombinationen und komplexere Geschäftsfälle."]];
-const A=[["Bank","Aktiv"],["Kasse","Aktiv"],["Forderungen LL","Aktiv"],["Warenvorrat","Aktiv"],["Mobiliar","Aktiv"],["Verbindlichkeiten LL","Passiv"],["Bankdarlehen","Passiv"],["Eigenkapital","Passiv"],["Warenaufwand","Aufwand"],["Mietaufwand","Aufwand"],["Warenertrag","Ertrag"],["Zinsaufwand","Aufwand"]];
+const A=CATALOG.accounts.map(a=>[a.id,a.kind]);
+const accountByName=new Map(CATALOG.accounts.map(a=>[a.id,a]));
+const accountDisplay=name=>{const a=accountByName.get(name);return a?a.number+' · '+a.id:name};
+const moduleTitle=()=>module==='mixed'?'Gemischte Aufgaben':module==='detective'?'Fehlerdetektiv':M.find(m=>m[0]===module)?.[1]||module;
 const $=id=>document.getElementById(id);let world=W[0],module="buchungen",difficulty="einfach",questions=[],position=0,session=[],answered=false,history=[],usedHint=false,usedSolution=false;
 try{const x=JSON.parse(localStorage.getItem("bookit-v3")||"[]");if(Array.isArray(x))history=x}catch(e){}
 function save(){try{localStorage.setItem("bookit-v3",JSON.stringify(history))}catch(e){}}
 function page(id){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===id));if(id==="progress")renderProgress();scrollTo(0,0)}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)page(b.dataset.page)});$("logo").onclick=()=>page("home");
 $("world-grid").innerHTML=W.map(w=>'<button class="world" data-world="'+w.id+'"><img src="'+w.image+'" loading="lazy" alt="'+w.business+'"><div class="details"><strong>'+w.id+'</strong><small>'+w.business+'</small></div></button>').join("");
-$("world-grid").addEventListener("click",e=>{const b=e.target.closest("[data-world]");if(!b)return;world=W.find(w=>w.id===b.dataset.world);showModules()});
-function showModules(){$("module-crumb").textContent=world.id;$("world-heading").textContent=world.id+": "+world.business;$("module-grid").innerHTML=M.map((m,i)=>'<button class="module" data-module="'+m[0]+'" '+(m[0]==="mwst"?'disabled':'')+'><span class="num">MODUL '+(i+1)+'</span><b>'+m[1]+'</b><small>'+m[2]+(m[0]==="mwst"?" (in Vorbereitung)":"")+'</small></button>').join("");page("modules")}
-$("module-grid").addEventListener("click",e=>{const b=e.target.closest("[data-module]");if(!b||b.disabled)return;module=b.dataset.module;if(module==="casebook"){location.href="fallstudie.html?welt="+encodeURIComponent(world.id);return}showDifficulties()});
-function showDifficulties(){$("difficulty-crumb").textContent=M.find(m=>m[0]===module)[1];$("difficulty-desc").textContent=world.id+" · "+M.find(m=>m[0]===module)[1];$("difficulty-grid").innerHTML=D.map(d=>'<button class="difficulty" data-difficulty="'+d[0]+'"><span class="tag">'+d[0].toUpperCase()+'</span><h2>'+d[1]+'</h2><p>'+d[2]+'</p></button>').join("");page("difficulty")}
+
+$("world-grid").addEventListener("click",e=>{
+ const b=e.target.closest("[data-world]");if(!b)return;
+ world=W.find(w=>w.id===b.dataset.world);showTopics();
+});
+function showTopics(){
+ $("topics-world").textContent=world.id;
+ $("topics-heading").textContent=world.id+" · "+world.firm;
+ $("topic-grid").innerHTML=CATALOG.topics.filter(t=>t.status==='active').map((t,i)=>
+  '<button class="module" data-topic="'+t.id+'"><span class="num">THEMA '+(i+1)+'</span><b>'+t.title+'</b><small>'+t.summary+'</small><span class="tag">Verfügbar</span></button>'
+ ).join("");
+ page("topics");
+}
+$("topic-grid").addEventListener("click",e=>{
+ const b=e.target.closest("[data-topic]");if(!b)return;
+ const selected=CATALOG.topics.find(t=>t.id===b.dataset.topic);
+ if(!selected||selected.status!=='active')return;showActivities();
+});
+function showActivities(){
+ $("activities-topic").textContent=TOPIC.title;
+ $("activities-heading").textContent=TOPIC.title;
+ $("activity-grid").innerHTML=CATALOG.activities.filter(a=>TOPIC.activities.includes(a.id)).map(a=>
+  '<button class="activity-card" data-activity="'+a.id+'"><span class="activity-icon">'+a.icon+'</span><strong>'+a.title+'</strong><small>'+a.description+'</small></button>'
+ ).join("");
+ page("activities");
+}
+$("activity-grid").addEventListener("click",e=>{
+ const b=e.target.closest("[data-activity]");if(!b)return;
+ const id=b.dataset.activity;
+ if(id==='lernen')showLearning();
+ else if(id==='trainieren')showModules();
+ else if(id==='fallstudien')showCases();
+ else if(id==='challenges'){module='detective';showDifficulties()}
+ else if(id==='gemischt'){module='mixed';showDifficulties()}
+});
+function showModules(){
+ $("world-heading").textContent=TOPIC.title;
+ $("module-grid").innerHTML=M.map((m,i)=>
+  '<button class="module" data-module="'+m[0]+'"><span class="num">AUFGABENART '+(i+1)+'</span><b>'+m[1]+'</b><small>'+m[2]+'</small></button>'
+ ).join("");
+ page("modules");
+}
+$("module-grid").addEventListener("click",e=>{
+ const b=e.target.closest("[data-module]");if(!b)return;
+ module=b.dataset.module;showDifficulties();
+});
+function showCases(){
+ $("cases-title").textContent=world.id+" · Unternehmensfallstudien";
+ $("case-grid").innerHTML=CATALOG.caseVariants.map((c,i)=>
+  '<a class="module case-link" href="fallstudie.html?welt='+encodeURIComponent(world.id)+'&case='+encodeURIComponent(c.id)+'"><span class="num">FALLSTUDIE '+(i+1)+'</span><b>'+c.title+'</b><small>'+c.description+'</small><span class="tag">'+c.level+'</span></a>'
+ ).join("");
+ page("cases");
+}
+function showLearning(){
+ $("learning-title").textContent=TOPIC.title;
+ $("learning-body").innerHTML='<div class="learning-cards">'+TOPIC.lessons.map((lesson,i)=>
+  '<article class="panel"><span class="tag">GRUNDLAGE '+(i+1)+'</span><h2>'+lesson.title+'</h2><p>'+lesson.text+'</p></article>'
+ ).join('')+'</div>'
+ +'<article class="panel"><h2>So entsteht ein Buchungssatz</h2>'
+ +'<p>Ein Unternehmen begleicht eine offene Lieferantenrechnung von CHF 800 per Bank. Die Schulden und das Bankguthaben nehmen ab.</p>'
+ +'<div class="worked-entry"><strong>Soll: 2000 · Verbindlichkeiten LL</strong><strong>Haben: 1020 · Bank</strong><strong>CHF 800</strong></div>'
+ +'<p class="muted">Die Verringerung einer Verbindlichkeit steht im Soll, die Verringerung eines Aktivkontos im Haben.</p></article>'
+ +'<article class="panel"><h2>Schweizer Kontenplan zum Kennenlernen</h2><p class="muted">Dieser grössere Kontenpool dient zum Nachschlagen und für verschiedene Übungstypen. Nicht alle Konten müssen in jeder Übung vorkommen.</p>'
+ +'<div id="account-filters" class="account-filters"><button class="secondary active-filter" data-kind="Alle">Alle</button>'
+ +['Aktiv','Passiv','Aufwand','Ertrag'].map(k=>'<button class="secondary" data-kind="'+k+'">'+k+'</button>').join('')
+ +'</div><div id="account-catalog-list"></div></article>';
+ showAccountCatalog('Alle');page("learning");
+}
+function showAccountCatalog(kind){
+ const filtered=CATALOG.accounts.filter(a=>kind==='Alle'||a.kind===kind);
+ $("account-catalog-list").innerHTML='<div class="account-catalog">'+filtered.map(a=>
+ '<div class="account-catalog-row"><strong>'+a.number+' · '+a.id+'</strong><span>'+a.kind+'</span></div>').join('')+'</div>';
+ for(const b of document.querySelectorAll('#account-filters [data-kind]'))b.classList.toggle('active-filter',b.dataset.kind===kind);
+}
+$("learning-body").addEventListener("click",e=>{
+ const b=e.target.closest("[data-kind]");if(b)showAccountCatalog(b.dataset.kind);
+});
+function showDifficulties(){
+ $("difficulty-crumb").textContent=moduleTitle();
+ $("difficulty-desc").textContent=world.id+' · '+TOPIC.title+' · '+moduleTitle();
+ $("difficulty-grid").innerHTML=D.map(d=>
+  '<button class="difficulty" data-difficulty="'+d[0]+'"><span class="tag">'+d[0].toUpperCase()+'</span><h2>'+d[1]+'</h2><p>'+d[2]+'</p></button>'
+ ).join("");
+ page("difficulty");
+}
 $("difficulty-grid").addEventListener("click",e=>{const b=e.target.closest("[data-difficulty]");if(!b)return;difficulty=b.dataset.difficulty;start()});
-$("back-module").onclick=showModules;$("practice-back").onclick=showModules;$("result-modules").onclick=showModules;
+function backToActivity(){if(module==='mixed'||module==='detective')showActivities();else showModules()}
+$("activities-back-topics").onclick=showTopics;
+$("modules-back-activities").onclick=showActivities;
+$("learning-back-activities").onclick=showActivities;
+$("cases-back-activities").onclick=showActivities;
+$("back-module").onclick=backToActivity;
+$("practice-back").onclick=backToActivity;
+$("result-modules").onclick=backToActivity;
 function amount(base,i){const seed=W.indexOf(world)+1;const factor=difficulty==="einfach"?1:difficulty==="mittel"?3:7;return (base+seed*(i+2)*25)*factor}
 function task(id,text,s,h,value,hint){return{id,type:"entry",text,s,h,value,hint}}
 function tasksForWorld(){
