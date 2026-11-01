@@ -187,6 +187,25 @@ nav button.nav-active{color:#61dcba;font-weight:800}
  .tool-symbol{width:39px;height:39px}
  .home-section-heading{margin-top:23px}
 }
+
+/* BOOKIT als Hauptaktivität, interaktive Rücknavigation */
+.crumb{display:flex;align-items:center;flex-wrap:wrap;gap:9px;font-size:13px;color:#5c6e84;margin-bottom:22px}
+.crumb button{display:inline-flex;align-items:center;gap:5px;border:1px solid #b9dbd3;border-radius:9px;background:#e8f7f2;color:#126d56;padding:8px 12px;font-size:13px;font-weight:800;line-height:1.25;transition:background .15s,border-color .15s,transform .15s}
+.crumb button::before{content:"←";display:inline-block;font-size:14px}
+.crumb button:hover{background:#d3f2e5;color:#0c5542;border-color:#7bcdb6;transform:translateY(-1px)}
+.crumb button:focus-visible{outline:3px solid #25ac83;outline-offset:3px}
+.crumb span{font-weight:750;color:#415770}
+.activity-featured{grid-column:span 2;background:linear-gradient(120deg,#10243f,#165949);border:1px solid #217760;color:#fff;padding:26px 30px;min-height:168px;box-shadow:0 12px 28px #153e411d}
+.activity-featured:hover{border-color:#51d8ae;box-shadow:0 16px 32px #143d4133}
+.activity-featured-top{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.activity-featured-label{font-size:11px;letter-spacing:1.1px;font-weight:900;color:#81f2d0}
+.activity-featured-arrow{font-size:24px;color:#9cf5d8}
+.activity-card .activity-featured-title{font-size:35px;color:#fff;letter-spacing:-1px;margin:-2px 0}
+.activity-featured small{font-size:13px;line-height:1.5;color:#d2ebe4;max-width:530px}
+.activity-featured-cta{font-weight:850;font-size:13px;color:#7ff1cc;margin-top:auto}
+.activity-featured-cta span{margin-left:6px}
+@media(max-width:600px){.activity-featured{grid-column:span 2;min-height:185px;padding:22px}.crumb button{padding:7px 10px}.activity-card .activity-featured-title{font-size:29px}}
+@media(max-width:450px){.activity-grid{grid-template-columns:1fr}.activity-featured{grid-column:span 1}.crumb{gap:6px}}
 </style><script src="bookit-module-catalog.js"></script><script src="bookit-reference-data.js"></script></head><body><header><button type="button" class="logo" id="logo" aria-label="BOOKIT Startseite">BOOK<span>IT.</span></button><nav aria-label="Hauptnavigation"><button data-page="landing">Start</button><button data-page="home">Themenwelten</button><button data-page="reference">Kontenplan</button><button data-page="progress">Fortschritt</button></nav></header><main>
 <section class="page active" id="landing">
  <div class="home-hero">
@@ -251,11 +270,11 @@ nav button.nav-active{color:#61dcba;font-weight:800}
 <section class="page" id="activities"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="activities-back-topics">Themen</button> / <span id="activities-topic"></span></div><div class="intro"><div class="eyebrow">Dein Thema</div><h1 id="activities-heading"></h1><p>Wie möchten Sie dieses Thema bearbeiten?</p></div><div id="activity-grid" class="activity-grid"></div></section>
 <section class="page" id="modules"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="modules-back-activities">Grundlagen</button> / Trainieren</div><div class="intro"><div class="eyebrow">Gezielt üben</div><h1 id="world-heading"></h1><p>Wählen Sie eine Aufgabenart. Je nach Aufgabenart werden unterschiedliche Konten aus dem Schweizer Kontenrahmen verwendet.</p></div><div id="module-grid" class="modules"></div></section>
 <section class="page" id="learning"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="learning-back-activities">Grundlagen</button> / Lernen</div><div class="intro"><div class="eyebrow">Grundlagen verstehen</div><h1 id="learning-title"></h1><p>Kurze Erklärungen, ein durchgerechnetes Beispiel und ein ausgewählter Kontenplan zum Nachschlagen.</p></div><div id="learning-body"></div></section>
-<section class="page" id="cases"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="cases-back-activities">Grundlagen</button> / Fallstudien</div><div class="intro"><div class="eyebrow">Die ganze Buchhaltung</div><h1 id="cases-title"></h1><p>Wählen Sie einen zusammenhängenden Geschäftsfall und führen Sie die vollständige Buchhaltung.</p></div><div id="case-grid" class="modules"></div></section>
+<section class="page" id="cases"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="cases-back-activities">Grundlagen</button> / BOOKIT</div><div class="intro"><div class="eyebrow">DAS HERZSTÜCK VON BOOKIT</div><h1 id="cases-title"></h1><p>Führen Sie die komplette Buchhaltung eines Unternehmens, von der Eröffnungsbilanz über das Journal und die T-Konten bis zur Erfolgsrechnung und Schlussbilanz. Wählen Sie Ihren Fall.</p></div><div id="case-grid" class="modules"></div></section>
 <section class="page" id="difficulty"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="back-module">Aufgabenarten</button> / <span id="difficulty-crumb"></span></div><div class="intro"><div class="eyebrow">Dein Training</div><h1>Wähle die Schwierigkeit</h1><p id="difficulty-desc"></p></div><div id="difficulty-grid" class="difficulties"></div></section>
 <section class="page" id="practice"><div class="lesson"><div class="crumb"><button data-page="home">Themenwelten</button> / <button id="practice-back">Zurück</button> / <span id="practice-crumb"></span></div><div class="intro"><div class="eyebrow" id="training-category"></div><h1 id="training-title"></h1><p id="training-count"></p></div><div class="progress"><div id="progress-fill"></div></div><div class="panel"><div class="eyebrow">Aufgabe <span id="number"></span></div><div id="case" class="case"></div><form id="form"><div class="fields" id="fields"></div><div class="actions"><button type="submit" id="check" class="primary">Antwort prüfen</button><button type="button" id="hint" class="secondary">Hinweis</button><button type="button" id="show-solution" class="secondary">Musterlösung anzeigen</button><button type="button" id="next" class="secondary">Nächste Aufgabe →</button></div></form><div id="hint-output" class="feedback bad hidden"></div><div id="feedback" class="feedback hidden" aria-live="polite"></div><div id="training-solution" class="feedback hidden" aria-live="polite"></div></div></div></section>
 <section class="page" id="results"><div class="lesson"><div class="panel"><div class="eyebrow">Training abgeschlossen</div><h1>Geschafft!</h1><p id="result-description"></p><h1 id="result-count"></h1><div class="actions"><button class="primary" id="retry">Erneut üben</button><button class="secondary" id="result-modules">Andere Aufgaben</button></div></div></div></section>
-<section class="page" id="progress"><div class="intro"><div class="eyebrow">Dein persönlicher Bereich</div><h1>Mein Lernfortschritt</h1><p>Hier siehst du deine Übungsversuche. In dieser Testversion bleiben deine Daten nur in deinem Browser gespeichert.</p></div><div class="stats"><div class="stat"><b id="stat-total">0</b><small>Versuche</small></div><div class="stat"><b id="stat-correct">0</b><small>Richtig</small></div><div class="stat"><b id="stat-percent">0 %</b><small>Erfolgsquote</small></div></div><div class="panel"><h2>Meine Themenwelten</h2><div id="progress-worlds"></div><p class="mini" id="progress-hints"></p></div><div class="panel"><h2>Meine Unternehmensfälle</h2><p>Fallstudien bleiben getrennt gespeichert. Öffne einen Fall, um weiterzuarbeiten.</p><div id="case-progress"></div></div><div class="actions"><button class="secondary" id="export-progress">Lernstände sichern (JSON)</button><button class="secondary" id="import-progress-button">Sicherung importieren</button><input id="import-progress-file" type="file" accept=".json,application/json" hidden><button class="secondary" id="reset">Testfortschritt löschen</button></div></section>
+<section class="page" id="progress"><div class="intro"><div class="eyebrow">Dein persönlicher Bereich</div><h1>Mein Lernfortschritt</h1><p>Hier siehst du deine Übungsversuche. In dieser Testversion bleiben deine Daten nur in deinem Browser gespeichert.</p></div><div class="stats"><div class="stat"><b id="stat-total">0</b><small>Versuche</small></div><div class="stat"><b id="stat-correct">0</b><small>Richtig</small></div><div class="stat"><b id="stat-percent">0 %</b><small>Erfolgsquote</small></div></div><div class="panel"><h2>Meine Themenwelten</h2><div id="progress-worlds"></div><p class="mini" id="progress-hints"></p></div><div class="panel"><h2>Meine BOOKIT-Fälle</h2><p>Deine vollständigen Buchhaltungsfälle werden getrennt gespeichert. Öffne einen Fall, um weiterzuarbeiten.</p><div id="case-progress"></div></div><div class="actions"><button class="secondary" id="export-progress">Lernstände sichern (JSON)</button><button class="secondary" id="import-progress-button">Sicherung importieren</button><input id="import-progress-file" type="file" accept=".json,application/json" hidden><button class="secondary" id="reset">Testfortschritt löschen</button></div></section>
 <footer>BOOKIT · Schweizer Buchhaltung · Schüleransicht · Alle Geschäftsfälle sind fiktiv.</footer></main><script>"use strict";
 const W=[
 {id:"Fussball",image:"Fussball.jpg",firm:"FC Basel",product:"Fussballtrikots",business:"Fanartikel und Tickets",emoji:"⚽"},
@@ -372,8 +391,15 @@ $("topic-grid").addEventListener("click",e=>{
 function showActivities(){
  $("activities-topic").textContent=TOPIC.title;
  $("activities-heading").textContent=TOPIC.title;
- $("activity-grid").innerHTML=CATALOG.activities.filter(a=>TOPIC.activities.includes(a.id)).map(a=>
-  '<button class="activity-card" data-activity="'+a.id+'"><span class="activity-icon">'+a.icon+'</span><strong>'+a.title+'</strong><small>'+a.description+'</small></button>'
+ const activities=CATALOG.activities.filter(a=>TOPIC.activities.includes(a.id))
+  .sort((a,b)=>Number(b.id==='fallstudien')-Number(a.id==='fallstudien'));
+ $("activity-grid").innerHTML=activities.map(a=>a.id==='fallstudien'
+  ?'<button class="activity-card activity-featured" data-activity="'+a.id+'">'
+   +'<span class="activity-featured-top"><span class="activity-featured-label">DAS HERZSTÜCK VON BOOKIT</span><span class="activity-featured-arrow" aria-hidden="true">↗</span></span>'
+   +'<strong class="activity-featured-title">BOOKIT.</strong>'
+   +'<small>Die komplette Buchhaltung selbst führen. Von der Eröffnungsbilanz über Journal und T-Konten bis zur Schlussbilanz.</small>'
+   +'<span class="activity-featured-cta">Buchhaltung starten <span aria-hidden="true">→</span></span></button>'
+  :'<button class="activity-card" data-activity="'+a.id+'"><span class="activity-icon">'+a.icon+'</span><strong>'+a.title+'</strong><small>'+a.description+'</small></button>'
  ).join("");
  page("activities");
 }
@@ -398,9 +424,9 @@ $("module-grid").addEventListener("click",e=>{
  module=b.dataset.module;showDifficulties();
 });
 function showCases(){
- $("cases-title").textContent=world.id+" · Unternehmensfallstudien";
+ $("cases-title").textContent="BOOKIT · "+world.id;
  $("case-grid").innerHTML=CATALOG.caseVariants.map((c,i)=>
-  '<a class="module case-link" href="fallstudie.html?welt='+encodeURIComponent(world.id)+'&case='+encodeURIComponent(c.id)+'"><span class="num">FALLSTUDIE '+(i+1)+'</span><b>'+c.title+'</b><small>'+c.description+'</small><span class="tag">'+c.level+'</span></a>'
+  '<a class="module case-link" href="fallstudie.html?welt='+encodeURIComponent(world.id)+'&case='+encodeURIComponent(c.id)+'"><span class="num">BOOKIT-FALL '+(i+1)+'</span><b>'+c.title+'</b><small>'+c.description+'</small><span class="tag">'+c.level+'</span></a>'
  ).join("");
  page("cases");
 }
